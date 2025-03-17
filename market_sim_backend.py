@@ -2,6 +2,7 @@
 import random
 import string
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import sqlite3
 from collections import namedtuple
 from functools import partial
@@ -475,6 +476,7 @@ def get_market_toplevel(resource_type):
 # TODO: allow person to cancel sell order
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route('/create_person', methods=['POST'])
@@ -543,18 +545,15 @@ def api_buy():
         return 'Method not allowed', 405
 
 
-
 @app.route('/get_price', methods=['GET'])
 def api_get_price():
     if request.method == 'GET':
 
         amount = 1
 
-        data = request.get_json()  # Get JSON data from the request body
-
-        resource_type = data['resource_type']
-        if 'amount' in data:
-            amount = data['amount']
+        resource_type = request.args.get('resource_type')
+        if 'amount' in request.args:
+            amount = int(request.args.get('amount'))
 
         b_success, message, price = get_price_toplevel(resource_type, amount)
 
@@ -569,13 +568,11 @@ def api_get_price():
         return 'Method not allowed', 405
 
 
-
 @app.route('/get_assets', methods=['GET'])
 def api_get_assets():
     if request.method == 'GET':
 
-        data = request.get_json()  # Get JSON data from the request body
-        name = data['name']
+        name = request.args.get('name')
 
         b_success, message, cash, resource_dict = get_assets(name)
 
@@ -592,12 +589,13 @@ def api_get_assets():
         return 'Method not allowed', 405
 
 
+
+
 @app.route('/get_market', methods=['GET'])
 def api_get_market():
     if request.method == 'GET':
 
-        data = request.get_json()  # Get JSON data from the request body
-        resource_type = data['resource_type']
+        resource_type = request.args.get('resource_type')
 
         b_success, message, sell_dict = get_market_toplevel(resource_type)
 
