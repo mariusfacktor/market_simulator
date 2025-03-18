@@ -241,37 +241,43 @@ def sell(name, resource_type, amount, price):
 
     b_success = False
 
-    person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+    if db_exists('person', column_list=['name'], value_list=[name]):
 
-    if db_exists('resource', column_list=['type'], value_list=[resource_type]):
+        person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
 
-        resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+        if db_exists('resource', column_list=['type'], value_list=[resource_type]):
 
-        if db_exists('person_resource', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id]):
+            resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
 
-            available_quantity = db_get('person_resource', 'amount', column_list=['person_id', 'resource_id'], 
-                                            value_list=[person_id, resource_id])
+            if db_exists('person_resource', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id]):
 
-            if available_quantity >= amount:
+                available_quantity = db_get('person_resource', 'amount', column_list=['person_id', 'resource_id'], 
+                                                value_list=[person_id, resource_id])
 
-                db_add_row('sell', column_list=['person_id', 'resource_id', 'amount', 'price'], 
-                            value_list=[person_id, resource_id, amount, price])
+                if available_quantity >= amount:
+
+                    db_add_row('sell', column_list=['person_id', 'resource_id', 'amount', 'price'], 
+                                value_list=[person_id, resource_id, amount, price])
 
 
-                # Take product from the seller
-                give_or_take_product(person_id, resource_id, -1 * amount)
+                    # Take product from the seller
+                    give_or_take_product(person_id, resource_id, -1 * amount)
 
-                b_success = True
-                message = 'Success (sale): %s sells %d %s for price %d' % (name, amount, resource_type, price)
+                    b_success = True
+                    message = 'Success (sale): %s sells %d %s for price %d' % (name, amount, resource_type, price)
+                else:
+                    b_success = False
+                    message = 'Failure (sale): not enough %s' % resource_type
             else:
                 b_success = False
-                message = 'Failure (sale): not enough %s' % resource_type
+                message = 'Failure (sale): %s has no %s' % (name, resource_type)
         else:
             b_success = False
-            message = 'Failure (sale): %s has no %s' % (name, resource_type)
+            message = 'Failure (sale): resource %s does not exist' % resource_type
+
     else:
         b_success = False
-        message = 'Failure (sale): resource %s does not exist' % resource_type
+        message = 'Failure (sale): %s does not exist' % name
 
 
     return b_success, message
@@ -321,7 +327,7 @@ def get_price_toplevel(resource_type, amount=1):
             price = get_price(resource_type, amount)
 
             b_success = True
-            message = 'Success (price): price for %s is %d' % (resource_type, price)
+            message = 'Success (price): price for %d %s is %d' % (amount, resource_type, price)
 
         else:
             b_success = False
