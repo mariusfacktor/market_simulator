@@ -4,6 +4,9 @@
 <script>
 
 import Listbox from 'primevue/listbox';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
 
 import axios from 'axios';
 
@@ -12,7 +15,10 @@ export default {
 
 
   components: {
-    Listbox    
+    Listbox,
+    InputText,
+    Button,
+    Message,
   },
 
   data() {
@@ -28,7 +34,8 @@ export default {
 
       error: null,
 
-      selectedPerson: ''
+      selectedPerson: '',
+      newPersonName: '',
     };
   },
 
@@ -124,13 +131,14 @@ export default {
       }
     },
 
-    async createPerson() {
+    async createPerson(name) {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'name': 'Phillip Geeter',
-                       'cash': 222,
-                       'resource_dict': {'apple': 4} };
+        const body = { 'name': String(name),
+                       'cash': 0,
+                       'resource_dict': {} };
+                       // 'resource_dict': {'apple': 4} };
 
         const response = await axios({
           method: 'post',
@@ -215,14 +223,15 @@ export default {
 
 <template>
 
-  <header>
+  <!-- <header>
     <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
   </header>
-  <br>
+  <br> -->
 
 
   <span>
-    <button @click="getMarket" class="button_getMarket">Get Market</button>
+    <!-- <button @click="getMarket" class="button_getMarket">Get Market</button> -->
+    <Button type="submit" severity="secondary" label="Get Market" @click="getMarket" />
     <div v-if="data_getMarket">
       <pre>    {{ data_getMarket.message }}</pre>
     </div>
@@ -234,7 +243,8 @@ export default {
 
 
   <span>
-    <button @click="getPrice" class="button_getPrice">Get Price</button>
+    <!-- <button @click="getPrice" class="button_getPrice">Get Price</button> -->
+    <Button type="submit" severity="secondary" label="Get Price" @click="getPrice" />
     <div v-if="data_getPrice">
       <pre>    {{ data_getPrice.message }}</pre>
     </div>
@@ -246,7 +256,8 @@ export default {
 
 
   <span>
-    <button @click="getAssets" class="button_getAssets">Get Assets</button>
+    <!-- <button @click="getAssets" class="button_getAssets">Get Assets</button> -->
+    <Button type="submit" severity="secondary" label="Get Assets" @click="getAssets" />
     <div v-if="data_getAssets">
       <pre>    {{ data_getAssets.message }}</pre>
     </div>
@@ -258,7 +269,8 @@ export default {
 
 
   <span>
-    <button @click="getPeople" class="button_getPeople">Get People</button>
+    <!-- <button @click="getPeople" class="button_getPeople">Get People</button> -->
+    <Button type="submit" severity="secondary" label="Get People" @click="getPeople" />
     <div v-if="data_getPeople">
       <pre>    {{ data_getPeople.message }}</pre>
     </div>
@@ -270,7 +282,8 @@ export default {
 
 
   <span>
-    <button @click="createPerson" class="button_createPerson">Create Person</button>
+    <!-- <button @click="createPerson" class="button_createPerson">Create Person</button> -->
+    <Button type="submit" severity="secondary" label="Create Person" @click="createPerson('Phillip Geeter')" />
     <div v-if="data_createPerson">
       <pre>    {{ data_createPerson.message }}</pre>
     </div>
@@ -282,7 +295,8 @@ export default {
 
 
   <span>
-    <button @click="sell" class="button_sell">Sell</button>
+    <!-- <button @click="sell" class="button_sell">Sell</button> -->
+    <Button type="submit" severity="secondary" label="Sell" @click="sell" />
     <div v-if="data_sell">
       <pre>    {{ data_sell.message }}</pre>
     </div>
@@ -294,7 +308,8 @@ export default {
 
 
   <span>
-    <button @click="buy" class="button_sell">Buy</button>
+    <!-- <button @click="buy" class="button_buy">Buy</button> -->
+    <Button type="submit" severity="secondary" label="Buy" @click="buy" />
     <div v-if="data_buy">
       <pre>    {{ data_buy.message }}</pre>
     </div>
@@ -312,6 +327,18 @@ export default {
     <p>Selected value: {{ selectedPerson }}</p>
   </div>
 
+  <br>
+
+  <div class="flex flex-col gap-2">
+    <!-- <label for="username">Username</label> -->
+    <InputText type="text" v-model="newPersonName" placeholder="Name" />
+    <Message size="small" severity="secondary" variant="simple">Create a new person</Message>
+  </div>
+
+  <div v-if="newPersonName">
+    <Button type="submit" severity="secondary" label="Create New Person" @click="createPerson(newPersonName)" />
+  </div>
+
 
   
 </template>
@@ -323,10 +350,10 @@ header {
   line-height: 1.5;
 }
 
-.logo {
+/*.logo {
   display: block;
   margin: 0 auto 2rem;
-}
+}*/
 
 @media (min-width: 1024px) {
   header {
@@ -335,9 +362,9 @@ header {
     padding-right: calc(var(--section-gap) / 2);
   }
 
-  .logo {
+  ./*logo {
     margin: 0 2rem 0 0;
-  }
+  }*/
 
   header .wrapper {
     display: flex;
