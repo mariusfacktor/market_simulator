@@ -1,14 +1,12 @@
 
+// npm run dev
+
 <script>
 
 import Listbox from 'primevue/listbox';
 
 import axios from 'axios';
 
-const peopleList = [{name: 'Joe Able'}, {name: 'Rick Martin'}, {name: 'Steve Boy'}, {name: 'Ann Yoked'},
-                {name: 'Bill Ross'}, {name: 'John Jones'}, {name: 'Yan Ukish'}, {name: 'Phil Donald'},
-                {name: 'Bob Voss'}, {name: 'Tracy Eves'}, {name: 'Nancy Plum'}, {name: 'Reece Tong'},
-                {name: 'Vance Hans'}, {name: 'Irvan Frank'}, {name: 'Zack Cool'}, {name: 'Edan Young'}]
 
 export default {
 
@@ -30,9 +28,12 @@ export default {
 
       error: null,
 
-      peopleList: peopleList,
       selectedPerson: ''
     };
+  },
+
+  mounted() {
+    this.getPeople();
   },
 
   methods: {
@@ -306,8 +307,11 @@ export default {
 
   <br>
 
-  <Listbox v-model="selectedPerson" :options="peopleList" filter optionLabel="name" class="w-full md:w-56" />
-  <p>Selected value: {{ selectedPerson }}</p>
+  <div v-if="data_getPeople">
+    <Listbox v-model="selectedPerson" :options="data_getPeople.data.people" filter class="w-full md:w-56" />
+    <p>Selected value: {{ selectedPerson }}</p>
+  </div>
+
 
   
 </template>
