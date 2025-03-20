@@ -1,29 +1,40 @@
 
-
-// sudo npm run dev
-// make HTTP request with axios
-// Google: example post request from vue with axios
-
-
-
 <script>
+
+import Listbox from 'primevue/listbox';
 
 import axios from 'axios';
 
+const peopleList = [{name: 'Joe Able'}, {name: 'Rick Martin'}, {name: 'Steve Boy'}, {name: 'Ann Yoked'},
+                {name: 'Bill Ross'}, {name: 'John Jones'}, {name: 'Yan Ukish'}, {name: 'Phil Donald'},
+                {name: 'Bob Voss'}, {name: 'Tracy Eves'}, {name: 'Nancy Plum'}, {name: 'Reece Tong'},
+                {name: 'Vance Hans'}, {name: 'Irvan Frank'}, {name: 'Zack Cool'}, {name: 'Edan Young'}]
+
 export default {
+
+
+  components: {
+    Listbox    
+  },
+
   data() {
     return {
       data_getMarket: null,
       data_getPrice: null,
       data_getAssets: null,
+      data_getPeople: null,
 
       data_createPerson: null,
       data_sell: null,
       data_buy: null,
 
       error: null,
+
+      peopleList: peopleList,
+      selectedPerson: ''
     };
   },
+
   methods: {
     async getMarket() {
       try {
@@ -88,6 +99,26 @@ export default {
         this.error = null;
       } catch (err) {
         this.data_getAssets = null;
+        this.error = err.message;
+      }
+    },
+
+    async getPeople() {
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+        const response = await axios({
+          method: 'get',
+          url: 'http://127.0.0.1:5000/get_people',
+          headers: headers,
+        });
+
+        console.log(response.data);
+
+        this.data_getPeople = response.data;
+        this.error = null;
+      } catch (err) {
+        this.data_getPeople = null;
         this.error = err.message;
       }
     },
@@ -179,6 +210,8 @@ export default {
 
 
 
+
+
 <template>
 
   <header>
@@ -190,7 +223,7 @@ export default {
   <span>
     <button @click="getMarket" class="button_getMarket">Get Market</button>
     <div v-if="data_getMarket">
-      <p>{{ data_getMarket.message }}</p>
+      <pre>    {{ data_getMarket.message }}</pre>
     </div>
     <div v-if="error">
         <p>Error: {{ error }}</p>
@@ -202,7 +235,7 @@ export default {
   <span>
     <button @click="getPrice" class="button_getPrice">Get Price</button>
     <div v-if="data_getPrice">
-      <p>{{ data_getPrice.message }}</p>
+      <pre>    {{ data_getPrice.message }}</pre>
     </div>
     <div v-if="error">
         <p>Error: {{ error }}</p>
@@ -214,7 +247,19 @@ export default {
   <span>
     <button @click="getAssets" class="button_getAssets">Get Assets</button>
     <div v-if="data_getAssets">
-      <p>{{ data_getAssets.message }}</p>
+      <pre>    {{ data_getAssets.message }}</pre>
+    </div>
+    <div v-if="error">
+        <p>Error: {{ error }}</p>
+    </div>
+  </span>
+  <br>
+
+
+  <span>
+    <button @click="getPeople" class="button_getPeople">Get People</button>
+    <div v-if="data_getPeople">
+      <pre>    {{ data_getPeople.message }}</pre>
     </div>
     <div v-if="error">
         <p>Error: {{ error }}</p>
@@ -226,7 +271,7 @@ export default {
   <span>
     <button @click="createPerson" class="button_createPerson">Create Person</button>
     <div v-if="data_createPerson">
-      <p>{{ data_createPerson.message }}</p>
+      <pre>    {{ data_createPerson.message }}</pre>
     </div>
     <div v-if="error">
         <p>Error: {{ error }}</p>
@@ -238,7 +283,7 @@ export default {
   <span>
     <button @click="sell" class="button_sell">Sell</button>
     <div v-if="data_sell">
-      <p>{{ data_sell.message }}</p>
+      <pre>    {{ data_sell.message }}</pre>
     </div>
     <div v-if="error">
         <p>Error: {{ error }}</p>
@@ -250,7 +295,7 @@ export default {
   <span>
     <button @click="buy" class="button_sell">Buy</button>
     <div v-if="data_buy">
-      <p>{{ data_buy.message }}</p>
+      <pre>    {{ data_buy.message }}</pre>
     </div>
     <div v-if="error">
         <p>Error: {{ error }}</p>
@@ -259,10 +304,13 @@ export default {
   <br>
 
 
+  <br>
 
+  <Listbox v-model="selectedPerson" :options="peopleList" filter optionLabel="name" class="w-full md:w-56" />
+  <p>Selected value: {{ selectedPerson }}</p>
+
+  
 </template>
-
-
 
 
 
@@ -274,16 +322,6 @@ header {
 .logo {
   display: block;
   margin: 0 auto 2rem;
-}
-
-.button_getMarket{
-    height:20px;
-    width:150px;
-}
-
-.button_createPerson{
-    height:20px;
-    width:150px;
 }
 
 @media (min-width: 1024px) {

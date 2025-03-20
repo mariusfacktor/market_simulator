@@ -4,8 +4,7 @@ import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
-from collections import namedtuple
-from functools import partial
+
 
 '''
 SELECT SUM(cash) FROM person;
@@ -477,6 +476,22 @@ def get_market_toplevel(resource_type):
 
 
 
+def get_people():
+
+    command = '''SELECT name FROM person'''
+    cursor.execute(command)
+    person_rows = cursor.fetchall()
+
+    person_list = [x['name'] for x in person_rows]
+    
+    b_success = True
+    message = 'Success (people): got %d people' % len(person_list)
+
+    return b_success, message, person_list
+
+
+
+
 
 
 # TODO: allow person to cancel sell order
@@ -608,6 +623,22 @@ def api_get_market():
         return_data = {
                         'resource_type': resource_type,
                         'sell_dict': sell_dict
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
+
+@app.route('/get_people', methods=['GET'])
+def api_get_people():
+    if request.method == 'GET':
+
+        b_success, message, person_list = get_people()
+        
+        return_data = {
+                        'people': person_list
                         }
 
         response = {'message': message, 'data': return_data}
