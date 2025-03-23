@@ -7,8 +7,14 @@ import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Message from 'primevue/message';
 import Select from 'primevue/select';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import SelectButton from 'primevue/selectbutton';
+import InputNumber from 'primevue/inputnumber';
 
 import axios from 'axios';
+
+
 
 
 export default {
@@ -19,6 +25,10 @@ export default {
     Button,
     Message,
     Select,
+    DataTable,
+    Column,
+    SelectButton,
+    InputNumber,
   },
 
   data() {
@@ -40,8 +50,11 @@ export default {
 
       selectPersonButton: null,
       createPersonButton: null,
+      selectButtonPerson: null,
 
       money: null,
+      selectedResource: null,
+      sellQuantity: null,
     };
   },
 
@@ -221,29 +234,22 @@ export default {
     },
 
 
-    async buttonSelectPerson() {
+    async buttonSelectOrCreatePerson(name) {
 
-      if (this.selectPersonButton) {
-        this.selectPersonButton = false;
-        this.createPersonButton = false;
-      }
-      else {
-
-        this.getPeople()
+      if (name == 'Select person') {
 
         this.selectPersonButton = true;
         this.createPersonButton = false;
-      }
-    },
+        this.getPeople()
+        }
+      else if (name == 'Create person') {
 
-    async buttonCreatePerson() {
-      if (this.createPersonButton) {
         this.selectPersonButton = false;
-        this.createPersonButton = false;
+        this.createPersonButton = true;
       }
       else {
         this.selectPersonButton = false;
-        this.createPersonButton = true;
+        this.createPersonButton = false;
       }
     },
 
@@ -252,8 +258,13 @@ export default {
       this.currentPerson = name;
       await this.getAssets(name);
       this.money = this.data_getAssets.data.cash;
+    },
 
-      console.log(this.money);
+
+
+    async debugFunc() {
+      console.log(this.selectedResource.resource)
+      // console.log('DEBUG A0')
     },
 
  
@@ -304,11 +315,7 @@ export default {
         </div>
 
 
-        <Button type="submit" severity="secondary" label="Select person" @click="buttonSelectPerson()" />
-        <div class="p-10 inline-block">
-          <Button type="submit" severity="secondary" label="Create new person" @click="buttonCreatePerson()" />
-        </div>
-
+        <SelectButton v-model="selectButtonPerson" @click="buttonSelectOrCreatePerson(selectButtonPerson)" :options="['Select person', 'Create person']" />
 
 
         <div v-if="selectPersonButton">
@@ -322,15 +329,12 @@ export default {
 
 
 
-        <div v-if="createPersonButton">
+        <div v-if="createPersonButton" style="width: 100%">
 
-          <div class="flex flex-col gap-2">
-            <InputText type="text" v-model="createdPerson" placeholder="Name" />
-            <Message size="small" severity="secondary" variant="simple"></Message>
-          </div>
+          <InputText type="text" v-model="createdPerson" placeholder="Name" style="width: 100%;" />
 
           <div v-if="createdPerson">
-            <Button type="submit" severity="secondary" label="Submit new person" @click="createPerson(createdPerson)" />
+            <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="createPerson(createdPerson)" />
           </div>
 
         </div>
@@ -340,8 +344,25 @@ export default {
         <p class="relative text-xl text-center">Assets</p>
 
         <div v-if="money != null">
-          <!-- <p class="p-10">Money: ${{money}}</p> -->
           <span class="p-10">Money: ${{money}}</span>
+        </div>
+
+
+
+        <div v-if="data_getAssets">
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="debugFunc()">
+            <Column field="resource" header="Resource"></Column>
+            <Column field="quantity" header="Quantity"></Column>
+          </DataTable>
+        </div>
+
+        <div v-if="selectedResource">
+            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
+
+            <div v-if="sellQuantity">
+              <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="sell()" />
+            </div>
+
         </div>
 
 
