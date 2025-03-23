@@ -40,6 +40,8 @@ export default {
 
       selectPersonButton: null,
       createPersonButton: null,
+
+      money: null,
     };
   },
 
@@ -95,10 +97,10 @@ export default {
       }
     },
 
-    async getAssets() {
+    async getAssets(name) {
       try {
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'name': 'Phillip Geeter' };
+        const params = { 'name': String(name) };
 
         const response = await axios({
           method: 'get',
@@ -248,6 +250,10 @@ export default {
 
     async setCurrentPerson(name) {
       this.currentPerson = name;
+      await this.getAssets(name);
+      this.money = this.data_getAssets.data.cash;
+
+      console.log(this.money);
     },
 
  
@@ -330,6 +336,15 @@ export default {
         </div>
 
 
+        <br>
+        <p class="relative text-xl text-center">Assets</p>
+
+        <div v-if="money != null">
+          <!-- <p class="p-10">Money: ${{money}}</p> -->
+          <span class="p-10">Money: ${{money}}</span>
+        </div>
+
+
       </div>
 
       <div class="flexbox-item flexbox-item-2"></div>
@@ -350,7 +365,7 @@ export default {
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Get Assets" @click="getAssets" />
+          <Button type="submit" severity="secondary" label="Get Assets" @click="getAssets('Phillip Geeter')" />
           <div v-if="data_getAssets">
             <pre>    {{ data_getAssets.message }}</pre>
           </div>
