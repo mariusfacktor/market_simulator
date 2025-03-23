@@ -3,7 +3,6 @@
 
 <script>
 
-import Listbox from 'primevue/listbox';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Message from 'primevue/message';
@@ -16,7 +15,6 @@ export default {
 
 
   components: {
-    Listbox,
     InputText,
     Button,
     Message,
@@ -37,16 +35,21 @@ export default {
       error: null,
 
       selectedPerson: '',
-      newPersonName: '',
+      createdPerson: '',
+      currentPerson: '',
+
+      selectPersonButton: null,
+      createPersonButton: null,
     };
   },
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    this.getPeople();
+    // this.getPeople();
   },
 
   methods: {
+
     async getMarket() {
       try {
         const headers = { 'Content-Type': 'application/json' };
@@ -158,6 +161,10 @@ export default {
         this.data_createPerson = null;
         this.error = err.message;
       }
+
+      // set currentPerson
+      this.setCurrentPerson(name);
+
     },
 
     async sell() {
@@ -212,6 +219,40 @@ export default {
     },
 
 
+    async buttonSelectPerson() {
+
+      if (this.selectPersonButton) {
+        this.selectPersonButton = false;
+        this.createPersonButton = false;
+      }
+      else {
+
+        this.getPeople()
+
+        this.selectPersonButton = true;
+        this.createPersonButton = false;
+      }
+    },
+
+    async buttonCreatePerson() {
+      if (this.createPersonButton) {
+        this.selectPersonButton = false;
+        this.createPersonButton = false;
+      }
+      else {
+        this.selectPersonButton = false;
+        this.createPersonButton = true;
+      }
+    },
+
+
+    async setCurrentPerson(name) {
+      this.currentPerson = name;
+    },
+
+ 
+
+
   },
 
 };
@@ -229,37 +270,63 @@ export default {
 
   <body>
 
+
+
+
+
+    <div class="flexbox-container-top">
+      <div class="flexbox-item flexbox-item-4">
+
+
+      </div>
+    </div>
+
+
+
+
+
+
+
     <div class="flexbox-container">
       <div class="flexbox-item flexbox-item-1">
 
-        <h1 class="text-center text-3xl">Select Existing Person</h1>
-
-
-        <!-- <div v-if="data_getPeople">
-          <Listbox v-model="selectedPerson" :options="data_getPeople.data.people" filter class="w-full md:w-56" />
-          <p>Selected value: {{ selectedPerson }}</p>
-        </div> -->
-
-        <div v-if="data_getPeople">
-          <Select v-model="selectedPerson" :options="data_getPeople.data.people" placeholder="Select a Person" class="w-full md:w-56" filter/>
-          <p>Selected value: {{ selectedPerson }}</p>
+        <div v-if="currentPerson">
+          <p class="relative text-xl text-center">Name: {{ currentPerson }}</p>
+        </div>
+        <div v-else>
+          <p class="relative text-xl text-center">Select or create a person</p>
         </div>
 
-        <br>
 
-        <h1 class="text-center text-3xl">OR</h1>
-
-        <br>
-
-        <h1 class="text-center text-3xl">Create New Person</h1>
-
-        <div class="flex flex-col gap-2">
-          <InputText type="text" v-model="newPersonName" placeholder="Name" />
-          <Message size="small" severity="secondary" variant="simple"></Message>
+        <Button type="submit" severity="secondary" label="Select person" @click="buttonSelectPerson()" />
+        <div class="p-10 inline-block">
+          <Button type="submit" severity="secondary" label="Create new person" @click="buttonCreatePerson()" />
         </div>
 
-        <div v-if="newPersonName">
-          <Button type="submit" severity="secondary" label="Create New Person" @click="createPerson(newPersonName)" />
+
+
+        <div v-if="selectPersonButton">
+
+          <div v-if="data_getPeople">
+            <Select v-model="selectedPerson" :options="data_getPeople.data.people" placeholder="Select person" class="w-full md:w-56" filter @update:modelValue="setCurrentPerson(selectedPerson)"/>
+          </div>
+
+        </div>
+
+
+
+
+        <div v-if="createPersonButton">
+
+          <div class="flex flex-col gap-2">
+            <InputText type="text" v-model="createdPerson" placeholder="Name" />
+            <Message size="small" severity="secondary" variant="simple"></Message>
+          </div>
+
+          <div v-if="createdPerson">
+            <Button type="submit" severity="secondary" label="Submit new person" @click="createPerson(createdPerson)" />
+          </div>
+
         </div>
 
 
@@ -334,10 +401,17 @@ export default {
 <style scoped>
 
 
+.flexbox-container-top {
+  display: flex;
+  justify-content: space-around;
+  height: 20vh;
+  width: 90vw;
+}
+
 .flexbox-container {
   display: flex;
   justify-content: space-around;
-  height: 100vh;
+  height: 80vh;
   width: 90vw;
 }
 
@@ -359,5 +433,11 @@ export default {
 .flexbox-item-3 {
   flex-grow: 1;
 }
+
+.flexbox-item-4 {
+  flex-grow: 1;
+}
+
+
 
 </style>

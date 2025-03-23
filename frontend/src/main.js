@@ -10,7 +10,7 @@ const app = createApp(App);
 
 app.use(PrimeVue, {
 	theme: {
-        preset: Aura
+        preset: Aura,
     }
 }); // Install PrimeVue plugin
 
