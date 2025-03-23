@@ -427,7 +427,7 @@ def buy(name, resource_type, amount):
 def get_assets(name):
 
     cash = None
-    resource_dict = None
+    resource_list = None
 
     if db_exists('person', column_list=['name'], value_list=[name]):
 
@@ -442,7 +442,7 @@ def get_assets(name):
         cursor.execute(command)
         resource_arr = cursor.fetchall()
 
-        resource_dict = {x['type']: x['amount'] for x in resource_arr}
+        resource_list = [{'resource': x['type'], 'quantity': x['amount']} for x in resource_arr]
 
 
         b_success = True
@@ -453,7 +453,7 @@ def get_assets(name):
         b_success = False
         message = 'Failure (assets): %s does not exist' % name
 
-    return b_success, message, cash, resource_dict
+    return b_success, message, cash, resource_list
 
 
 
@@ -595,13 +595,13 @@ def api_get_assets():
 
         name = request.args.get('name')
 
-        b_success, message, cash, resource_dict = get_assets(name)
+        b_success, message, cash, resource_list = get_assets(name)
 
 
         return_data = {
                         'name': name,
                         'cash': cash,
-                        'resource_dict': resource_dict
+                        'resource_list': resource_list
                         }
 
         response = {'message': message, 'data': return_data}
