@@ -56,6 +56,8 @@ export default {
       selectedResource: null,
       sellQuantity: null,
       sellPrice: null,
+
+      currentPersonSales: null,
     };
   },
 
@@ -66,10 +68,10 @@ export default {
 
   methods: {
 
-    async getMarket() {
+    async getMarket(resource_type) {
       try {
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'resource_type': 'apple' };
+        const params = { 'resource_type': resource_type };
 
         const response = await axios({
           method: 'get',
@@ -86,6 +88,16 @@ export default {
         this.data_getMarket = null;
         this.error = err.message;
       }
+
+      if (this.currentPerson) {
+        this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
+      }
+      else {
+        this.currentPersonSales = null;
+      }
+
+      // console.log([...this.currentPersonSales]);
+
     },
 
     async getPrice() {
@@ -204,10 +216,13 @@ export default {
         // get updated list of resources
         await this.getAssets(name);
 
+        // get updated market
+        await this.getMarket(resource_type)
+
         // reset fields
         this.sellQuantity = null;
         this.sellPrice = null;
-        this.selectedResource = null;
+        // this.selectedResource = null;
 
         this.data_sell = response.data;
         this.error = null;
@@ -265,8 +280,15 @@ export default {
 
     async setCurrentPerson(name) {
       this.currentPerson = name;
+
       await this.getAssets(name);
       this.money = this.data_getAssets.data.cash;
+
+      // reset
+      this.selectedResource = null;
+      this.currentPersonSales = null;
+
+
     },
 
 
@@ -348,23 +370,25 @@ export default {
         </div>
 
 
-        <br>
-        <p class="relative text-xl text-center">Assets</p>
 
         <div v-if="money != null">
-          <span class="p-10 relative text-lg" >Money: ${{money}}</span>
+          <p class="relative text-xl text-center">Assets</p>
+          <span class="p-2 relative text-lg" >Money: &nbsp; ${{money}}</span>
         </div>
 
 
 
         <div v-if="data_getAssets">
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarket(selectedResource.resource)" >
             <Column field="resource" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
         </div>
 
         <div v-if="selectedResource">
+
+          <p class="relative text-xl text-center">{{selectedResource.resource}}</p>
+
             <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
 
             <InputNumber v-model="sellPrice" inputId="integeronly" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
@@ -373,16 +397,32 @@ export default {
               <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="sell(currentPerson, selectedResource.resource, sellQuantity, sellPrice)" />
             </div>
 
+            <div v-if="currentPersonSales">
+              <p class="relative text-xl text-center">Selling</p>
+
+              <DataTable selectionMode="single" v-model:selection="selectedResource" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
+                <Column field="amount" header="Quantity"></Column>
+                <Column field="price" header="Price"></Column>
+              </DataTable>
+
+            </div>
+
         </div>
+
 
 
       </div>
 
+
+
+
       <div class="flexbox-item flexbox-item-2"></div>
+
+
 
       <div class="flexbox-item flexbox-item-3">
 
-          <Button type="submit" severity="secondary" label="Get Market" @click="getMarket" />
+          <Button type="submit" severity="secondary" label="Get Market" @click="getMarket('apple')" />
           <div v-if="data_getMarket">
             <pre>    {{ data_getMarket.message }}</pre>
           </div>

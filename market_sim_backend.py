@@ -463,7 +463,9 @@ def get_market_toplevel(resource_type):
 
     if db_exists('resource', column_list=['type'], value_list=[resource_type]):
         sell_table = get_market(resource_type)
-        sell_dict = {i: {'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)}
+        # sell_dict = {i: {'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)}
+        sell_list = [{'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)]
+
 
 
         b_success = True
@@ -472,7 +474,7 @@ def get_market_toplevel(resource_type):
         b_success = False
         message = 'Failure (market): resource type %s does not exist' % resource_type
 
-    return b_success, message, sell_dict
+    return b_success, message, sell_list
 
 
 
@@ -618,11 +620,11 @@ def api_get_market():
 
         resource_type = request.args.get('resource_type')
 
-        b_success, message, sell_dict = get_market_toplevel(resource_type)
+        b_success, message, sell_list = get_market_toplevel(resource_type)
 
         return_data = {
                         'resource_type': resource_type,
-                        'sell_dict': sell_dict
+                        'sell_list': sell_list
                         }
 
         response = {'message': message, 'data': return_data}
