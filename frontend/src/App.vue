@@ -55,6 +55,7 @@ export default {
       money: null,
       selectedResource: null,
       sellQuantity: null,
+      sellPrice: null,
     };
   },
 
@@ -182,14 +183,14 @@ export default {
 
     },
 
-    async sell() {
+    async sell(name, resource_type, amount, price) {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'name': 'Phillip Geeter',
-                       'resource_type': 'apple',
-                       'amount': 1,
-                       'price': 12 };
+        const body = { 'name': name,
+                       'resource_type': resource_type,
+                       'amount': amount,
+                       'price': price };
 
         const response = await axios({
           method: 'post',
@@ -199,6 +200,14 @@ export default {
         });
 
         console.log(response.data);
+
+        // get updated list of resources
+        await this.getAssets(name);
+
+        // reset fields
+        this.sellQuantity = null;
+        this.sellPrice = null;
+        this.selectedResource = null;
 
         this.data_sell = response.data;
         this.error = null;
@@ -263,8 +272,7 @@ export default {
 
 
     async debugFunc() {
-      console.log(this.selectedResource.resource)
-      // console.log('DEBUG A0')
+      console.log('DEBUG A0')
     },
 
  
@@ -344,13 +352,13 @@ export default {
         <p class="relative text-xl text-center">Assets</p>
 
         <div v-if="money != null">
-          <span class="p-10">Money: ${{money}}</span>
+          <span class="p-10 relative text-lg" >Money: ${{money}}</span>
         </div>
 
 
 
         <div v-if="data_getAssets">
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="debugFunc()">
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
             <Column field="resource" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
@@ -359,8 +367,10 @@ export default {
         <div v-if="selectedResource">
             <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
 
-            <div v-if="sellQuantity">
-              <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="sell()" />
+            <InputNumber v-model="sellPrice" inputId="integeronly" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
+
+            <div v-if="sellQuantity && sellPrice">
+              <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="sell(currentPerson, selectedResource.resource, sellQuantity, sellPrice)" />
             </div>
 
         </div>
@@ -407,7 +417,7 @@ export default {
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Sell" @click="sell" />
+          <Button type="submit" severity="secondary" label="Sell" @click="sell('Phillip Geeter', 'apple', 2, 8)" />
           <div v-if="data_sell">
             <pre>    {{ data_sell.message }}</pre>
           </div>
