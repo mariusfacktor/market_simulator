@@ -491,6 +491,20 @@ def get_people():
     return b_success, message, person_list
 
 
+def get_resources():
+
+    command = '''SELECT type FROM resource'''
+    cursor.execute(command)
+    resource_rows = cursor.fetchall()
+
+    resource_list = [x['type'] for x in resource_rows]
+    
+    b_success = True
+    message = 'Success (resource): got %d resources' % len(resource_list)
+
+    return b_success, message, resource_list
+
+
 
 def cancel_sell(sell_id):
 
@@ -505,7 +519,7 @@ def cancel_sell(sell_id):
     db_update('sell', 'amount', 0, column_list=['id'], value_list=[sell_id])
 
     b_success = True
-    message = 'SUCCESS: sale %d canceled' % sell_id
+    message = 'SUCCESS (cancel): sale %d canceled' % sell_id
 
     return b_success, message
 
@@ -657,6 +671,22 @@ def api_get_people():
         
         return_data = {
                         'people': person_list
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
+
+@app.route('/get_resources', methods=['GET'])
+def api_get_resources():
+    if request.method == 'GET':
+
+        b_success, message, resource_list = get_resources()
+        
+        return_data = {
+                        'resources': resource_list
                         }
 
         response = {'message': message, 'data': return_data}

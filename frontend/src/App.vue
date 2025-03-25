@@ -37,6 +37,7 @@ export default {
       data_getPrice: null,
       data_getAssets: null,
       data_getPeople: null,
+      data_getResources: null,
 
       data_createPerson: null,
       data_sell: null,
@@ -59,13 +60,17 @@ export default {
       sellPrice: null,
 
       currentPersonSales: null,
+      selectedSaleForCancel: null,
+
+      currentResource: null,
       selectedSale: null,
+      data_getMarketForBuying: null,
     };
   },
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    // this.getPeople();
+    this.getResources();
   },
 
   methods: {
@@ -91,15 +96,12 @@ export default {
         this.error = err.message;
       }
 
-      if (this.currentPerson) {
-        this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
-      }
-      else {
-        this.currentPersonSales = null;
-      }
-
-      // reset
-      this.selectedSale = null;
+      // if (this.currentPerson) {
+      //   this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
+      // }
+      // else {
+      //   this.currentPersonSales = null;
+      // }
 
     },
 
@@ -168,6 +170,28 @@ export default {
       }
     },
 
+
+    async getResources() {
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+        const response = await axios({
+          method: 'get',
+          url: 'http://127.0.0.1:5000/get_resources',
+          headers: headers,
+        });
+
+        console.log(response.data);
+
+        this.data_getResources = response.data;
+        this.error = null;
+      } catch (err) {
+        this.data_getResources = null;
+        this.error = err.message;
+      }
+    },
+
+
     async createPerson(name) {
       try {
         const headers = { 'Content-Type': 'application/json' };
@@ -220,7 +244,9 @@ export default {
         await this.getAssets(name);
 
         // get updated market
-        await this.getMarket(resource_type)
+        // await this.getMarket(resource_type)
+        await this.getMarketForPerson(resource_type)
+
 
         // reset fields
         this.sellQuantity = null;
@@ -287,7 +313,7 @@ export default {
       await this.getAssets(this.currentPerson);
 
       // refresh market
-      await this.getMarket(this.selectedResource.resource)
+      await this.getMarketForPerson(this.selectedResource.resource)
 
     },
 
@@ -322,6 +348,30 @@ export default {
       this.selectedResource = null;
       this.currentPersonSales = null;
 
+
+    },
+
+    async getMarketForPerson(resource_type) {
+
+      await this.getMarket(resource_type);
+
+      if (this.currentPerson) {
+        this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
+      }
+      else {
+        this.currentPersonSales = null;
+      }
+
+      // reset
+      this.selectedSaleForCancel = null;
+    },
+
+
+    async getMarketForBuying(resource_type) {
+
+      await this.getMarket(resource_type);
+
+      this.data_getMarketForBuying = this.data_getMarket;
 
     },
 
@@ -413,7 +463,7 @@ export default {
 
 
         <div v-if="data_getAssets">
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarket(selectedResource.resource)" >
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.resource)" >
             <Column field="resource" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
@@ -434,13 +484,13 @@ export default {
             <div v-if="currentPersonSales">
               <p class="relative text-xl text-center">Selling</p>
 
-              <DataTable selectionMode="single" v-model:selection="selectedSale" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
+              <DataTable selectionMode="single" v-model:selection="selectedSaleForCancel" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
                 <Column field="amount" header="Quantity"></Column>
                 <Column field="price" header="Price"></Column>
               </DataTable>
 
-              <div v-if="selectedSale" >
-                <Button style="width: 100%;" type="submit" severity="secondary" label="Cancel listing" @click="cancelSell(selectedSale.sell_id)" />
+              <div v-if="selectedSaleForCancel" >
+                <Button style="width: 100%;" type="submit" severity="secondary" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.sell_id)" />
               </div>
 
             </div>
@@ -454,7 +504,34 @@ export default {
 
 
 
-      <div class="flexbox-item flexbox-item-2"></div>
+      <div class="flexbox-item flexbox-item-2">
+
+        <div v-if="currentResource">
+          <p class="relative text-xl text-center">Resource: {{ currentResource }}</p>
+        </div>
+        <div v-else>
+          <p class="relative text-xl text-center">Select a resource</p>
+        </div>
+
+        <div v-if="data_getResources">
+          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
+        </div>
+
+
+        <!-- REPLACE BELOW WITH TEXT BOX FOR AMOUNT WISHING TO BUY -->
+        <div v-if="currentResource && data_getMarketForBuying">
+          <p class="relative text-xl text-center">Available listings</p>
+
+          <DataTable selectionMode="single" v-model:selection="selectedSale" :value="data_getMarketForBuying.data.sell_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
+            <Column field="name" header="Name"></Column>
+            <Column field="amount" header="Quantity"></Column>
+            <Column field="price" header="Price"></Column>
+          </DataTable>
+
+        </div>
+        
+
+      </div>
 
 
 
