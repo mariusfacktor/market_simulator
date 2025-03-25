@@ -41,6 +41,7 @@ export default {
       data_createPerson: null,
       data_sell: null,
       data_buy: null,
+      data_cancelSell: null,
 
       error: null,
 
@@ -58,6 +59,7 @@ export default {
       sellPrice: null,
 
       currentPersonSales: null,
+      selectedSale: null,
     };
   },
 
@@ -96,7 +98,8 @@ export default {
         this.currentPersonSales = null;
       }
 
-      // console.log([...this.currentPersonSales]);
+      // reset
+      this.selectedSale = null;
 
     },
 
@@ -258,6 +261,37 @@ export default {
     },
 
 
+    async cancelSell(sell_id) {
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+        const body = { 'sell_id': sell_id };
+
+        const response = await axios({
+          method: 'post',
+          url: 'http://127.0.0.1:5000/cancel_sell',
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.data_cancelSell = response.data;
+        this.error = null;
+      } catch (err) {
+        this.data_cancelSell = null;
+        this.error = err.message;
+      }
+
+      // refresh assets
+      await this.getAssets(this.currentPerson);
+
+      // refresh market
+      await this.getMarket(this.selectedResource.resource)
+
+    },
+
+
     async buttonSelectOrCreatePerson(name) {
 
       if (name == 'Select person') {
@@ -400,10 +434,14 @@ export default {
             <div v-if="currentPersonSales">
               <p class="relative text-xl text-center">Selling</p>
 
-              <DataTable selectionMode="single" v-model:selection="selectedResource" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
+              <DataTable selectionMode="single" v-model:selection="selectedSale" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
                 <Column field="amount" header="Quantity"></Column>
                 <Column field="price" header="Price"></Column>
               </DataTable>
+
+              <div v-if="selectedSale" >
+                <Button style="width: 100%;" type="submit" severity="secondary" label="Cancel listing" @click="cancelSell(selectedSale.sell_id)" />
+              </div>
 
             </div>
 

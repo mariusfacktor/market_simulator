@@ -463,8 +463,7 @@ def get_market_toplevel(resource_type):
 
     if db_exists('resource', column_list=['type'], value_list=[resource_type]):
         sell_table = get_market(resource_type)
-        # sell_dict = {i: {'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)}
-        sell_list = [{'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)]
+        sell_list = [{'sell_id': x['id'], 'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)]
 
 
 
@@ -493,10 +492,27 @@ def get_people():
 
 
 
+def cancel_sell(sell_id):
+
+    person_id = db_get('sell', 'person_id', column_list=['id'], value_list=[sell_id])
+    resource_id = db_get('sell', 'resource_id', column_list=['id'], value_list=[sell_id])
+    amount = db_get('sell', 'amount', column_list=['id'], value_list=[sell_id])
+
+    # Give product back to the seller
+    give_or_take_product(person_id, resource_id, amount)
+
+    # Set amount to zero in sale row
+    db_update('sell', 'amount', 0, column_list=['id'], value_list=[sell_id])
+
+    b_success = True
+    message = 'SUCCESS: sale %d canceled' % sell_id
+
+    return b_success, message
 
 
 
-# TODO: allow person to cancel sell order
+
+
 
 app = Flask(__name__)
 CORS(app)
@@ -641,6 +657,27 @@ def api_get_people():
         
         return_data = {
                         'people': person_list
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
+
+@app.route('/cancel_sell', methods=['POST'])
+def api_cancel_sale():
+    if request.method == 'POST':
+        data = request.get_json()  # Get JSON data from the request body
+
+        sell_id = data['sell_id']
+
+
+        b_success, message = cancel_sell(sell_id)
+
+
+        return_data = {
+                        'sell_id': sell_id
                         }
 
         response = {'message': message, 'data': return_data}
