@@ -153,10 +153,14 @@ export default {
 
         this.data_getAssets = response.data;
         this.error = null;
+
+        this.money = this.data_getAssets.data.cash;
+
       } catch (err) {
         this.data_getAssets = null;
         this.error = err.message;
       }
+
     },
 
     async getPeople() {
@@ -270,13 +274,13 @@ export default {
       }
     },
 
-    async buy() {
+    async buy(name, resource_type, amount) {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'name': 'Phillip Geeter',
-                       'resource_type': 'apple',
-                       'amount': 2 };
+        const body = { 'name': name,
+                       'resource_type': resource_type,
+                       'amount': amount };
 
         const response = await axios({
           method: 'post',
@@ -293,6 +297,15 @@ export default {
         this.data_buy = null;
         this.error = err.message;
       }
+
+      // refresh assets
+      if (this.currentPerson) {
+        await this.getAssets(this.currentPerson);
+      }
+
+      // reset
+      this.buyQuantity = null;
+
     },
 
 
@@ -351,7 +364,6 @@ export default {
       this.currentPerson = name;
 
       await this.getAssets(name);
-      this.money = this.data_getAssets.data.cash;
 
       // reset
       this.selectedResource = null;
@@ -483,11 +495,14 @@ export default {
 
 
         <div v-if="data_getAssets">
+
           <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.resource)" >
             <Column field="resource" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
+
         </div>
+
 
         <div v-if="selectedResource">
 
@@ -537,7 +552,7 @@ export default {
           <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
         </div>
 
-        <div v-if="currentResource && data_getMarketForBuying">
+        <div v-if="currentResource && data_getMarketForBuying && currentPerson">
 
           <p class="relative text-xl text-center">Available: {{numAvailable}}</p>
 
@@ -545,18 +560,13 @@ export default {
 
           <div v-if="buyQuantity && data_getPrice && data_getPrice.data.price">
             <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
+
+            <div v-if="(money != null) && (money >= data_getPrice.data.price)">
+              <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" />
+            </div>
+
           </div>
 
-
-
-          <!-- REPLACE BELOW WITH TEXT BOX FOR AMOUNT WISHING TO BUY -->
-          <!-- <p class="relative text-xl text-center">Available listings</p>
-
-          <DataTable selectionMode="single" v-model:selection="selectedSale" :value="data_getMarketForBuying.data.sell_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
-            <Column field="name" header="Name"></Column>
-            <Column field="amount" header="Quantity"></Column>
-            <Column field="price" header="Price"></Column>
-          </DataTable> -->
 
         </div>
         
@@ -609,7 +619,7 @@ export default {
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Buy" @click="buy" />
+          <Button type="submit" severity="secondary" label="Buy" @click="buy('Phillip Geeter', 'apple', 2)" />
           <div v-if="data_buy">
             <pre>    {{ data_buy.message }}</pre>
           </div>
