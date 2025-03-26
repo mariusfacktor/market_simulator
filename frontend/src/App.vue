@@ -65,6 +65,11 @@ export default {
       currentResource: null,
       selectedSale: null,
       data_getMarketForBuying: null,
+
+      buyQuantity: null,
+      numAvailable: null,
+      pricePerUnit: null,
+
     };
   },
 
@@ -105,11 +110,11 @@ export default {
 
     },
 
-    async getPrice() {
+    async getPrice(resource_type, amount) {
       try {
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'resource_type': 'apple',
-                         'amount': 1 };
+        const params = { 'resource_type': resource_type,
+                         'amount': amount };
 
         const response = await axios({
           method: 'get',
@@ -122,6 +127,10 @@ export default {
 
         this.data_getPrice = response.data;
         this.error = null;
+
+        this.pricePerUnit = this.data_getPrice.data.price / amount;
+        this.pricePerUnit = this.pricePerUnit.toFixed(2);
+
       } catch (err) {
         this.data_getPrice = null;
         this.error = err.message;
@@ -373,6 +382,17 @@ export default {
 
       this.data_getMarketForBuying = this.data_getMarket;
 
+      // Add up all the quantities to get total number for sale
+      var num_available = 0;
+      for (let i = 0; i < this.data_getMarketForBuying.data.sell_list.length; i++) {
+        num_available += this.data_getMarketForBuying.data.sell_list[i].amount;
+      }
+
+      this.numAvailable = num_available;
+
+      // reset
+      this.buyQuantity = null;
+
     },
 
 
@@ -457,7 +477,7 @@ export default {
 
         <div v-if="money != null">
           <p class="relative text-xl text-center">Assets</p>
-          <span class="p-2 relative text-lg" >Money: &nbsp; ${{money}}</span>
+          <span class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
         </div>
 
 
@@ -475,7 +495,7 @@ export default {
 
             <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
 
-            <InputNumber v-model="sellPrice" inputId="integeronly" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
+            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
             <div v-if="sellQuantity && sellPrice">
               <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="sell(currentPerson, selectedResource.resource, sellQuantity, sellPrice)" />
@@ -517,16 +537,26 @@ export default {
           <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
         </div>
 
-
-        <!-- REPLACE BELOW WITH TEXT BOX FOR AMOUNT WISHING TO BUY -->
         <div v-if="currentResource && data_getMarketForBuying">
-          <p class="relative text-xl text-center">Available listings</p>
+
+          <p class="relative text-xl text-center">Available: {{numAvailable}}</p>
+
+          <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="Buy quantity" fluid @update:modelValue="getPrice(currentResource, buyQuantity)" />
+
+          <div v-if="buyQuantity && data_getPrice && data_getPrice.data.price">
+            <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
+          </div>
+
+
+
+          <!-- REPLACE BELOW WITH TEXT BOX FOR AMOUNT WISHING TO BUY -->
+          <!-- <p class="relative text-xl text-center">Available listings</p>
 
           <DataTable selectionMode="single" v-model:selection="selectedSale" :value="data_getMarketForBuying.data.sell_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
             <Column field="name" header="Name"></Column>
             <Column field="amount" header="Quantity"></Column>
             <Column field="price" header="Price"></Column>
-          </DataTable>
+          </DataTable> -->
 
         </div>
         
@@ -544,7 +574,7 @@ export default {
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Get Price" @click="getPrice" />
+          <Button type="submit" severity="secondary" label="Get Price" @click="getPrice('apple', 1)" />
           <div v-if="data_getPrice">
             <pre>    {{ data_getPrice.message }}</pre>
           </div>
