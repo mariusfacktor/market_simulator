@@ -69,6 +69,7 @@ export default {
       buyQuantity: null,
       numAvailable: null,
       pricePerUnit: null,
+      firstPrice: null,
 
     };
   },
@@ -100,13 +101,6 @@ export default {
         this.data_getMarket = null;
         this.error = err.message;
       }
-
-      // if (this.currentPerson) {
-      //   this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
-      // }
-      // else {
-      //   this.currentPersonSales = null;
-      // }
 
     },
 
@@ -400,6 +394,14 @@ export default {
         num_available += this.data_getMarketForBuying.data.sell_list[i].amount;
       }
 
+      // Get first price
+      if (this.data_getMarketForBuying.data.sell_list.length > 0) {
+        this.firstPrice = this.data_getMarketForBuying.data.sell_list[0].price;
+      }
+      else {
+        this.firstPrice = null;
+      }
+
       this.numAvailable = num_available;
 
       // reset
@@ -453,8 +455,16 @@ export default {
     <div class="flexbox-container">
       <div class="flexbox-item flexbox-item-1">
 
+        <div style="text-align:center;">
+          <p style="display:inline-block;" class="relative text-3xl text-center">
+            <i class="pi pi-user" style="font-size: 2.5rem"></i>
+            Person
+          </p>
+        </div>
+        <br>
+
         <div v-if="currentPerson">
-          <p class="relative text-xl text-center">Name: {{ currentPerson }}</p>
+          <p style="font-weight: bold;" class="relative text-xl text-center">Name: {{ currentPerson }}</p>
         </div>
         <div v-else>
           <p class="relative text-xl text-center">Select or create a person</p>
@@ -488,10 +498,24 @@ export default {
 
 
         <div v-if="money != null">
-          <p class="relative text-xl text-center">Assets</p>
-          <span class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
+          <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
         </div>
 
+      </div>
+
+
+
+
+      <div class="flexbox-item flexbox-item-2">
+
+        <div style="text-align:center;">
+          <p style="display:inline-block;" class="relative text-3xl text-center">
+            <i class="pi pi-shop" style="font-size: 2.5rem"></i>
+            Sell
+          </p>
+        </div>
+
+        <br>
 
 
         <div v-if="data_getAssets">
@@ -506,7 +530,7 @@ export default {
 
         <div v-if="selectedResource">
 
-          <p class="relative text-xl text-center">{{selectedResource.resource}}</p>
+          <p style="font-weight: bold;" class="relative text-xl text-center">{{selectedResource.resource}}</p>
 
             <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
 
@@ -532,17 +556,25 @@ export default {
 
         </div>
 
-
+        
+        
 
       </div>
 
 
 
+      <div class="flexbox-item flexbox-item-3">
 
-      <div class="flexbox-item flexbox-item-2">
+        <div style="text-align:center;">
+          <p style="display:inline-block;" class="relative text-3xl text-center">
+            <i class="pi pi-shopping-bag" style="font-size: 2.5rem"></i>
+            Buy
+          </p>
+        </div>
+        <br>
 
         <div v-if="currentResource">
-          <p class="relative text-xl text-center">Resource: {{ currentResource }}</p>
+          <p style="font-weight: bold;" class="relative text-xl text-center">Resource: {{ currentResource }}</p>
         </div>
         <div v-else>
           <p class="relative text-xl text-center">Select a resource</p>
@@ -552,32 +584,48 @@ export default {
           <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
         </div>
 
-        <div v-if="currentResource && data_getMarketForBuying && currentPerson">
+        <div v-if="currentResource && data_getMarketForBuying">
 
-          <p class="relative text-xl text-center">Available: {{numAvailable}}</p>
+          <div v-if="firstPrice">
+            <p class="relative text-xl text-center">Available: {{numAvailable}} &nbsp; &nbsp; &nbsp; Price: ${{firstPrice.toFixed(2)}}</p>
+          </div>
+          <div v-else>
+            <p class="relative text-xl text-center">Available: {{numAvailable}}</p>
+          </div>
 
-          <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="Buy quantity" fluid @update:modelValue="getPrice(currentResource, buyQuantity)" />
+          <div v-if="currentPerson">
 
-          <div v-if="buyQuantity && data_getPrice && data_getPrice.data.price">
-            <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
+            <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="Buy quantity" fluid @update:modelValue="getPrice(currentResource, buyQuantity)" />
 
-            <div v-if="(money != null) && (money >= data_getPrice.data.price)">
-              <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" />
+            <div v-if="buyQuantity && data_getPrice && data_getPrice.data.price">
+              <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
+
+              <div v-if="(money != null) && (money >= data_getPrice.data.price)">
+                <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" />
+              </div>
+
             </div>
 
           </div>
 
 
         </div>
-        
 
       </div>
 
 
 
-      <div class="flexbox-item flexbox-item-3">
+    </div>
 
-          <Button type="submit" severity="secondary" label="Get Market" @click="getMarket('apple')" />
+
+
+
+
+
+    <div class="flexbox-container-bottom">
+      <div class="flexbox-item flexbox-item-5">
+
+        <Button type="submit" severity="secondary" label="Get Market" @click="getMarket('apple')" />
           <div v-if="data_getMarket">
             <pre>    {{ data_getMarket.message }}</pre>
           </div>
@@ -626,10 +674,11 @@ export default {
           <div v-else><br></div>
 
 
-
       </div>
-
     </div>
+
+
+
 
   </body>
 
@@ -646,6 +695,13 @@ export default {
   display: flex;
   justify-content: space-around;
   height: 20vh;
+  width: 90vw;
+}
+
+.flexbox-container-bottom {
+  display: flex;
+  justify-content: space-around;
+  height: 65vh;
   width: 90vw;
 }
 
@@ -678,6 +734,11 @@ export default {
 .flexbox-item-4 {
   flex-grow: 1;
 }
+
+.flexbox-item-5 {
+  flex-grow: 1;
+}
+
 
 
 
