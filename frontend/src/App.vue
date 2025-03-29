@@ -11,6 +11,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import SelectButton from 'primevue/selectbutton';
 import InputNumber from 'primevue/inputnumber';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 import axios from 'axios';
 
@@ -29,6 +30,7 @@ export default {
     Column,
     SelectButton,
     InputNumber,
+    ToggleSwitch,
   },
 
   data() {
@@ -70,6 +72,10 @@ export default {
       numAvailable: null,
       pricePerUnit: null,
       firstPrice: null,
+
+      adminToggle: null,
+      adminMoney: null,
+      adminDepositWithdraw: null,
 
     };
   },
@@ -410,6 +416,21 @@ export default {
     },
 
 
+    async depositOrWithdraw() {
+
+      if (this.adminDepositWithdraw == 'Deposit') {
+        // add money
+        console.log('deposit ', this.adminMoney);
+      }
+      else {
+        // subract money
+        console.log('withdraw ', this.adminMoney);
+      }
+
+
+    },
+
+
 
     async debugFunc() {
       console.log('DEBUG A0')
@@ -490,7 +511,7 @@ export default {
           <InputText type="text" v-model="createdPerson" placeholder="Name" style="width: 100%;" />
 
           <div v-if="createdPerson">
-            <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="createPerson(createdPerson)" />
+            <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="createPerson(createdPerson)" rounded />
           </div>
 
         </div>
@@ -500,6 +521,31 @@ export default {
         <div v-if="money != null">
           <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
         </div>
+
+        <div v-if="currentPerson">
+          <br><br>
+          <div v-if="adminToggle">
+            <ToggleSwitch v-model="adminToggle" />
+            <span> &nbsp; &nbsp; Admin mode enabled </span>
+          </div>
+          <div v-else>
+            <ToggleSwitch v-model="adminToggle" />
+            <span> &nbsp; &nbsp; Admin mode disabled &nbsp; &nbsp; </span>
+          </div>
+        </div>
+
+        <div v-if="adminToggle">
+          <InputNumber v-model="adminMoney" placeholder="Deposit or withdraw" inputId="currency-us" mode="currency" currency="USD" locale="en-US" fluid />
+        </div>
+        <div v-if="adminToggle && adminMoney">
+          <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
+        </div>
+        <div v-if="adminToggle && adminMoney && adminDepositWithdraw">
+          <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="depositOrWithdraw" rounded />
+        </div>
+
+
+
 
       </div>
 
@@ -537,7 +583,7 @@ export default {
             <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
             <div v-if="sellQuantity && sellPrice">
-              <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="sell(currentPerson, selectedResource.resource, sellQuantity, sellPrice)" />
+              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="sell(currentPerson, selectedResource.resource, sellQuantity, sellPrice)" rounded />
             </div>
 
             <div v-if="currentPersonSales">
@@ -549,7 +595,7 @@ export default {
               </DataTable>
 
               <div v-if="selectedSaleForCancel" >
-                <Button style="width: 100%;" type="submit" severity="secondary" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.sell_id)" />
+                <Button style="width: 100%;" type="submit" severity="success" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.sell_id)" rounded />
               </div>
 
             </div>
@@ -601,7 +647,7 @@ export default {
               <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
 
               <div v-if="(money != null) && (money >= data_getPrice.data.price)">
-                <Button style="width: 100%;" type="submit" severity="secondary" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" />
+                <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" rounded />
               </div>
 
             </div>
@@ -625,49 +671,49 @@ export default {
     <div class="flexbox-container-bottom">
       <div class="flexbox-item flexbox-item-5">
 
-        <Button type="submit" severity="secondary" label="Get Market" @click="getMarket('apple')" />
+        <Button type="submit" severity="success" label="Get Market" @click="getMarket('apple')" rounded />
           <div v-if="data_getMarket">
             <pre>    {{ data_getMarket.message }}</pre>
           </div>
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Get Price" @click="getPrice('apple', 1)" />
+          <Button type="submit" severity="success" label="Get Price" @click="getPrice('apple', 1)" rounded />
           <div v-if="data_getPrice">
             <pre>    {{ data_getPrice.message }}</pre>
           </div>
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Get Assets" @click="getAssets('Phillip Geeter')" />
+          <Button type="submit" severity="success" label="Get Assets" @click="getAssets('Phillip Geeter')" rounded />
           <div v-if="data_getAssets">
             <pre>    {{ data_getAssets.message }}</pre>
           </div>
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Get People" @click="getPeople" />
+          <Button type="submit" severity="success" label="Get People" @click="getPeople" rounded />
           <div v-if="data_getPeople">
             <pre>    {{ data_getPeople.message }}</pre>
           </div>
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Create Person" @click="createPerson('Phillip Geeter')" />
+          <Button type="submit" severity="success" label="Create Person" @click="createPerson('Phillip Geeter')" rounded />
           <div v-if="data_createPerson">
             <pre>    {{ data_createPerson.message }}</pre>
           </div>
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Sell" @click="sell('Phillip Geeter', 'apple', 2, 8)" />
+          <Button type="submit" severity="success" label="Sell" @click="sell('Phillip Geeter', 'apple', 2, 8)" rounded />
           <div v-if="data_sell">
             <pre>    {{ data_sell.message }}</pre>
           </div>
           <div v-else><br></div>
 
 
-          <Button type="submit" severity="secondary" label="Buy" @click="buy('Phillip Geeter', 'apple', 2)" />
+          <Button type="submit" severity="success" label="Buy" @click="buy('Phillip Geeter', 'apple', 2)" rounded />
           <div v-if="data_buy">
             <pre>    {{ data_buy.message }}</pre>
           </div>
