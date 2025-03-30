@@ -524,6 +524,21 @@ def cancel_sell(sell_id):
     return b_success, message
 
 
+def deposit_or_withdraw(name, option, dollars):
+
+    person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+
+    if option == 'withdraw':
+        dollars = -1 * dollars
+
+    pay_or_charge_person(person_id, dollars)
+
+    b_success = True
+    message = 'Success (deposit): %s %d with account %s' %(option, dollars, name)
+
+    return b_success, message
+
+
 
 
 
@@ -715,6 +730,26 @@ def api_cancel_sale():
     else:
         return 'Method not allowed', 405
 
+
+@app.route('/deposit_or_withdraw', methods=['POST'])
+def api_deposit_or_withdraw():
+    if request.method == 'POST':
+        data = request.get_json()  # Get JSON data from the request body
+
+        name = data['name']
+        option = data['option']
+        dollars = data['dollars']
+
+        b_success, message = deposit_or_withdraw(name, option, dollars)
+
+        return_data = {
+                        'name': name
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
 
 
 

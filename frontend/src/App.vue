@@ -77,6 +77,8 @@ export default {
       adminMoney: null,
       adminDepositWithdraw: null,
 
+      adminDepositWithdrawResponse: null,
+
     };
   },
 
@@ -418,15 +420,43 @@ export default {
 
     async depositOrWithdraw() {
 
-      if (this.adminDepositWithdraw == 'Deposit') {
-        // add money
-        console.log('deposit ', this.adminMoney);
-      }
-      else {
-        // subract money
-        console.log('withdraw ', this.adminMoney);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+
+        var deposit_or_withdraw_str = ''
+        if (this.adminDepositWithdraw == 'Deposit') {
+          // add money
+          deposit_or_withdraw_str = 'deposit';
+        }
+        else {
+          // subract money
+          deposit_or_withdraw_str = 'withdraw';
+        }
+
+        const body = { 'name': this.currentPerson,
+                       'option': deposit_or_withdraw_str,
+                       'dollars': this.adminMoney
+                      };
+
+        const response = await axios({
+          method: 'post',
+          url: 'http://127.0.0.1:5000/deposit_or_withdraw',
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.adminDepositWithdrawResponse = response.data;
+        this.error = null;
+      } catch (err) {
+        this.adminDepositWithdrawResponse = null;
+        this.error = err.message;
       }
 
+      // update money
+      this.getAssets(this.currentPerson);
 
     },
 
