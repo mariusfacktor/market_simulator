@@ -24,7 +24,7 @@ create_person_table_sql = '''
     CREATE TABLE IF NOT EXISTS person (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    cash INTEGER
+    cash REAL
 );
 '''
 
@@ -133,7 +133,7 @@ def db_update(table, col_name, value, column_list, value_list):
     if isinstance(value, str):
         command = 'UPDATE %s SET %s = "%s" WHERE %s;' %(table, col_name, value, criteria_str)
     else:
-        command = 'UPDATE %s SET %s = %d WHERE %s;' %(table, col_name, value, criteria_str)
+        command = 'UPDATE %s SET %s = %f WHERE %s;' %(table, col_name, value, criteria_str)
 
     cursor.execute(command)
 
@@ -263,7 +263,7 @@ def sell(name, resource_type, amount, price):
                     give_or_take_product(person_id, resource_id, -1 * amount)
 
                     b_success = True
-                    message = 'Success (sale): %s sells %d %s for price %d' % (name, amount, resource_type, price)
+                    message = 'Success (sale): %s sells %d %s for price %.2f' % (name, amount, resource_type, price)
                 else:
                     b_success = False
                     message = 'Failure (sale): not enough %s' % resource_type
@@ -326,7 +326,7 @@ def get_price_toplevel(resource_type, amount=1):
             price = get_price(resource_type, amount)
 
             b_success = True
-            message = 'Success (price): price for %d %s is %d' % (amount, resource_type, price)
+            message = 'Success (price): price for %d %s is %.2f' % (amount, resource_type, price)
 
         else:
             b_success = False
@@ -403,11 +403,11 @@ def buy(name, resource_type, amount):
 
 
                     b_success = True
-                    message = 'Success (buy): %s buys %d %s for cost %d' % (name, amount, resource_type, running_cost)
+                    message = 'Success (buy): %s buys %d %s for cost %.2f' % (name, amount, resource_type, running_cost)
 
                 else:
                     b_success = False
-                    message = 'Failure (buy): buyer %s cannot afford the cost %d for %s' % (name, price, resource_type)
+                    message = 'Failure (buy): buyer %s cannot afford the cost %.2f for %s' % (name, price, resource_type)
 
             else:
                 b_success = False
@@ -437,7 +437,7 @@ def get_assets(name):
         person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
 
         command = '''SELECT type, resource_id, amount FROM person_resource 
-                        INNER JOIN resource ON person_resource.resource_id = resource.id WHERE person_id = %d''' % person_id
+                        INNER JOIN resource ON person_resource.resource_id = resource.id WHERE person_id = %d ORDER BY resource.type''' % person_id
 
         cursor.execute(command)
         resource_arr = cursor.fetchall()
@@ -527,14 +527,21 @@ def cancel_sell(sell_id):
 def deposit_or_withdraw(name, option, dollars):
 
     person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+    buyer_cash = db_get('person', 'cash', column_list=['id'], value_list=[person_id])
 
     if option == 'withdraw':
+
+        if buyer_cash < dollars:
+            b_success = False
+            message = 'Failure (deposit): %s has not enough cash to withdraw %s' %(name, dollars)
+            return b_success, message
+
         dollars = -1 * dollars
 
     pay_or_charge_person(person_id, dollars)
 
     b_success = True
-    message = 'Success (deposit): %s %d with account %s' %(option, dollars, name)
+    message = 'Success (deposit): %s %.2f with account %s' %(option, dollars, name)
 
     return b_success, message
 

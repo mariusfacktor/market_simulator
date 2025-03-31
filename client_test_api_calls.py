@@ -35,7 +35,9 @@ def sell(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
     amount = random.randint(1, 30)
-    price = random.randint(1, 15)
+
+    # price = random.randint(1, 15)
+    price = round(0.01 + (14.99 * random.random()), 2)
 
     data = {'name': name, 'resource_type': resource_type, 'amount': amount, 'price': price}
 
