@@ -79,6 +79,11 @@ export default {
 
       adminDepositWithdrawResponse: null,
 
+      adminSelectMoneyOrResorce: null,
+      adminSelectedResource: null,
+      adminResourceAmount: null,
+      adminDepositWithdrawResource: null,
+
     };
   },
 
@@ -266,7 +271,6 @@ export default {
         // reset fields
         this.sellQuantity = null;
         this.sellPrice = null;
-        // this.selectedResource = null;
 
         this.data_sell = response.data;
         this.error = null;
@@ -307,6 +311,9 @@ export default {
 
       // reset
       this.buyQuantity = null;
+
+      // update buy market
+      await this.getMarketForBuying(resource_type);
 
     },
 
@@ -565,14 +572,44 @@ export default {
         </div>
 
         <div v-if="adminToggle">
-          <InputNumber v-model="adminMoney" placeholder="Deposit or withdraw" inputId="currency-us" mode="currency" currency="USD" locale="en-US" fluid />
+
+          <SelectButton v-model="adminSelectMoneyOrResorce" :options="['Money', 'Resource']" />
+
+          <div v-if="adminSelectMoneyOrResorce == 'Money'">
+
+            <InputNumber v-model="adminMoney" placeholder="Deposit or withdraw" inputId="currency-us" mode="currency" currency="USD" locale="en-US" fluid />
+
+            <div v-if="adminMoney">
+              <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
+            </div>
+            <div v-if="adminMoney && adminDepositWithdraw">
+              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="depositOrWithdraw" rounded />
+            </div>
+
+          </div>
+
+          <div v-if="adminSelectMoneyOrResorce == 'Resource' && data_getResources">
+
+            <Select v-model="adminSelectedResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter/>
+
+            <div v-if="adminSelectedResource">
+
+              <InputNumber v-model="adminResourceAmount" placeholder="Deposit or withdraw" inputId="integeronly" fluid />
+
+              <div v-if="adminResourceAmount">
+                <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" />
+              </div>
+
+              <div v-if="adminResourceAmount && adminDepositWithdrawResource">
+                <Button style="width: 100%;" type="submit" severity="success" label="Submit" rounded />
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
-        <div v-if="adminToggle && adminMoney">
-          <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
-        </div>
-        <div v-if="adminToggle && adminMoney && adminDepositWithdraw">
-          <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="depositOrWithdraw" rounded />
-        </div>
+
 
 
 

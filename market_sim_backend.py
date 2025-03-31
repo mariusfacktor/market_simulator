@@ -527,13 +527,14 @@ def cancel_sell(sell_id):
 def deposit_or_withdraw(name, option, dollars):
 
     person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
-    buyer_cash = db_get('person', 'cash', column_list=['id'], value_list=[person_id])
 
     if option == 'withdraw':
 
+        buyer_cash = db_get('person', 'cash', column_list=['id'], value_list=[person_id])
+
         if buyer_cash < dollars:
             b_success = False
-            message = 'Failure (deposit): %s has not enough cash to withdraw %s' %(name, dollars)
+            message = 'Failure (deposit): %s has not enough cash to withdraw %.2f' %(name, dollars)
             return b_success, message
 
         dollars = -1 * dollars
@@ -542,6 +543,31 @@ def deposit_or_withdraw(name, option, dollars):
 
     b_success = True
     message = 'Success (deposit): %s %.2f with account %s' %(option, dollars, name)
+
+    return b_success, message
+
+
+
+def give_or_take_resource(name, resource_type, option, amount):
+
+    person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+    resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+
+    if option == 'withdraw':
+
+        resource_amount = db_get('person_resource', 'amount', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id])
+
+        if resource_amount < amount:
+            b_success = False
+            message = 'Failure (give): %s has not enough %s to withdraw %d' %(name, resource_type, amount)
+            return b_success, message
+
+        amount = -1 * amount
+
+    give_or_take_product(person_id, resource_id, amount)
+
+    b_success = True
+    message = 'Success (give): %s %d %s with account %s' %(option, amount, resource_type, name)
 
     return b_success, message
 
@@ -758,6 +784,27 @@ def api_deposit_or_withdraw():
     else:
         return 'Method not allowed', 405
 
+
+@app.route('/give_or_take_resource', methods=['POST'])
+def api_give_or_take_resource():
+    if request.method == 'POST':
+        data = request.get_json()  # Get JSON data from the request body
+
+        name = data['name']
+        resource_type = data['resource_type']
+        option = data['option']
+        amount = data['amount']
+
+        b_success, message = give_or_take_resource(name, resource_type, option, amount)
+
+        return_data = {
+                        'name': name
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
 
 
 
