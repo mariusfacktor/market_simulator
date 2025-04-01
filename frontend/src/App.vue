@@ -83,6 +83,7 @@ export default {
       adminSelectedResource: null,
       adminResourceAmount: null,
       adminDepositWithdrawResource: null,
+      adminGiveOrTakeResourceResponse: null,
 
     };
   },
@@ -468,6 +469,50 @@ export default {
     },
 
 
+    async giveOrTakeResource() {
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+
+        var deposit_or_withdraw_str = ''
+        if (this.adminDepositWithdrawResource == 'Deposit') {
+          // add money
+          deposit_or_withdraw_str = 'deposit';
+        }
+        else {
+          // subract money
+          deposit_or_withdraw_str = 'withdraw';
+        }
+
+        const body = { 'name': this.currentPerson,
+                       'resource_type': this.adminSelectedResource,
+                       'option': deposit_or_withdraw_str,
+                       'amount': this.adminResourceAmount
+                      };
+
+        const response = await axios({
+          method: 'post',
+          url: 'http://127.0.0.1:5000/give_or_take_resource',
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.adminGiveOrTakeResourceResponse = response.data;
+        this.error = null;
+      } catch (err) {
+        this.adminGiveOrTakeResourceResponse = null;
+        this.error = err.message;
+      }
+
+      // update person's resources
+      this.getAssets(this.currentPerson);
+
+    },
+
+
 
     async debugFunc() {
       console.log('DEBUG A0')
@@ -601,7 +646,7 @@ export default {
               </div>
 
               <div v-if="adminResourceAmount && adminDepositWithdrawResource">
-                <Button style="width: 100%;" type="submit" severity="success" label="Submit" rounded />
+                <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="giveOrTakeResource" rounded />
               </div>
 
             </div>
