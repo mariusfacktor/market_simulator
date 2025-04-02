@@ -11,7 +11,9 @@ names = ['Martin Tubins', 'Ryan Loaf', 'Andrew Harrington', 'Alicia Kind', 'Zara
         'Charlie Young', 'Mandy Poppins', 'Jon Phelps', 'Harry Platter', 'Sven Beans', 'Donna Waters', 'Neal Borgswith', 'Torance Miller', 'Rod Fried',
         'Ralph Gibbons', 'Scooter Coolidge', 'Jim Roberts', 'Ripley James', 'Ashley Summers', 'Andy Florence', 'Vanessa Craw', 'Ted Moe', 'Tia Alfred']
 
-resources = ['apple', 'orange', 'tomato']
+# resources = ['apple', 'orange', 'tomato']
+resources = ['apple', 'orange', 'tomato', 'coconut']
+
 
 
 def create_person():

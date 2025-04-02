@@ -85,6 +85,9 @@ export default {
       adminDepositWithdrawResource: null,
       adminGiveOrTakeResourceResponse: null,
 
+      newResourceData: null,
+      selectButtonResource: null,
+
     };
   },
 
@@ -513,6 +516,34 @@ export default {
     },
 
 
+    async newResource() {
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+        const body = { 
+                       'resource_type': 'coconut'
+                      };
+
+        const response = await axios({
+          method: 'post',
+          url: 'http://127.0.0.1:5000/new_resource',
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.newResourceData = response.data;
+        this.error = null;
+      } catch (err) {
+        this.newResourceData = null;
+        this.error = err.message;
+      }
+
+    },
+
+
 
     async debugFunc() {
       console.log('DEBUG A0')
@@ -633,7 +664,11 @@ export default {
 
           </div>
 
-          <div v-if="adminSelectMoneyOrResorce == 'Resource' && data_getResources">
+          <div v-if="adminSelectMoneyOrResorce == 'Resource'">
+            <SelectButton v-model="selectButtonResource" :options="['Select resource', 'Create resource']" />
+          </div>
+
+          <div v-if="adminSelectMoneyOrResorce == 'Resource' && selectButtonResource == 'Select resource' && data_getResources">
 
             <Select v-model="adminSelectedResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter/>
 
@@ -651,6 +686,10 @@ export default {
 
             </div>
 
+          </div>
+
+          <div v-if="adminSelectMoneyOrResorce == 'Resource' && selectButtonResource == 'Create resource'">
+            INSERT TEXT BOX HERE FOR NEW RESOURCE
           </div>
 
         </div>

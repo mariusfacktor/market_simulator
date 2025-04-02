@@ -572,6 +572,19 @@ def give_or_take_resource(name, resource_type, option, amount):
     return b_success, message
 
 
+def new_resource(resource_type):
+
+    if not db_exists('resource', column_list=['type'], value_list=[resource_type]):
+        db_add_row('resource', column_list=['type'], value_list=[resource_type])
+
+        b_success = True
+        message = 'Success (new_resource): %s added to resource table' %resource_type
+
+    else:
+        b_success = False
+        message = 'Failure (new_resource): %s already exists in resource table' %resource_type
+
+    return b_success, message
 
 
 
@@ -799,6 +812,25 @@ def api_give_or_take_resource():
 
         return_data = {
                         'name': name
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
+
+@app.route('/new_resource', methods=['POST'])
+def api_new_resource():
+    if request.method == 'POST':
+        data = request.get_json()  # Get JSON data from the request body
+
+        resource_type = data['resource_type']
+
+        b_success, message = new_resource(resource_type)
+
+        return_data = {
+                        'resource_type': resource_type
                         }
 
         response = {'message': message, 'data': return_data}
