@@ -88,6 +88,8 @@ export default {
       newResourceData: null,
       selectButtonResource: null,
 
+      newResourceType: null,
+
     };
   },
 
@@ -516,13 +518,13 @@ export default {
     },
 
 
-    async newResource() {
+    async newResource(resource_type) {
 
       try {
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 
-                       'resource_type': 'coconut'
+                       'resource_type': String(resource_type)
                       };
 
         const response = await axios({
@@ -540,6 +542,12 @@ export default {
         this.newResourceData = null;
         this.error = err.message;
       }
+
+      // reset
+      this.newResourceType = null;
+
+      // update
+      this.getResources();
 
     },
 
@@ -689,7 +697,13 @@ export default {
           </div>
 
           <div v-if="adminSelectMoneyOrResorce == 'Resource' && selectButtonResource == 'Create resource'">
-            INSERT TEXT BOX HERE FOR NEW RESOURCE
+            
+            <InputText type="text" v-model="newResourceType" placeholder="Resource type" style="width: 100%;" />
+
+            <div v-if="newResourceType">
+              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="newResource(newResourceType)" rounded />
+            </div>
+
           </div>
 
         </div>
