@@ -90,6 +90,9 @@ export default {
 
       newResourceType: null,
 
+      typingSessionID: null,
+      sessionID: null,
+
     };
   },
 
@@ -270,7 +273,6 @@ export default {
         await this.getAssets(name);
 
         // get updated market
-        // await this.getMarket(resource_type)
         await this.getMarketForPerson(resource_type)
 
 
@@ -384,8 +386,14 @@ export default {
       this.selectedResource = null;
       this.currentPersonSales = null;
 
-
     },
+
+
+    async setSessionID(sessionID) {
+      this.sessionID = sessionID;
+      this.typingSessionID = null;
+    },
+
 
     async getMarketForPerson(resource_type) {
 
@@ -584,6 +592,20 @@ export default {
     <div class="flexbox-container-top">
       <div class="flexbox-item flexbox-item-4">
 
+        <div v-if="sessionID">
+          <p style="font-weight: bold;" class="relative text-xl text-center">Session ID: {{ sessionID }}</p>
+        </div>
+        <div v-else>
+          <p class="relative text-xl text-center">Enter a new or existing Session ID</p>
+        </div>
+
+        <div style="text-align:center;">
+          <InputText type="text" v-model="typingSessionID" placeholder="Session ID" style="text-align:center;" />
+        </div>
+
+        <div v-if="typingSessionID" style="text-align:center;">
+          <Button style="width: 200px;" type="submit" severity="success" label="Submit" @click="setSessionID(typingSessionID)" rounded />
+        </div>
 
       </div>
     </div>
@@ -833,7 +855,7 @@ export default {
 
 
 
-    <div class="flexbox-container-bottom">
+    <!-- <div class="flexbox-container-bottom">
       <div class="flexbox-item flexbox-item-5">
 
         <Button type="submit" severity="success" label="Get Market" @click="getMarket('apple')" rounded />
@@ -886,7 +908,7 @@ export default {
 
 
       </div>
-    </div>
+    </div> -->
 
 
 
