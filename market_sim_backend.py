@@ -23,6 +23,7 @@ cursor = conn.cursor()
 create_person_table_sql = '''
     CREATE TABLE IF NOT EXISTS person (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER,
     name TEXT NOT NULL,
     cash REAL
 );
@@ -31,12 +32,14 @@ create_person_table_sql = '''
 create_resource_table_sql = '''
     CREATE TABLE IF NOT EXISTS resource (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER,
     type TEXT NOT NULL
 );
 '''
 
 create_person_resource_table_sql = '''
     CREATE TABLE IF NOT EXISTS person_resource (
+    session_id INTEGER,
     person_id INTEGER,
     resource_id INTEGER,
     amount INTEGER
@@ -46,6 +49,7 @@ create_person_resource_table_sql = '''
 create_sell_table_sql = '''
     CREATE TABLE IF NOT EXISTS sell (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER,
     person_id INTEGER,
     resource_id INTEGER,
     amount INTEGER,
@@ -53,11 +57,21 @@ create_sell_table_sql = '''
 );
 '''
 
+
+create_session_table_sql = '''
+    CREATE TABLE IF NOT EXISTS session (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_key TEXT NOT NULL
+);
+'''
+
+
 # Execute the SQL command
 cursor.execute(create_person_table_sql)
 cursor.execute(create_resource_table_sql)
 cursor.execute(create_person_resource_table_sql)
 cursor.execute(create_sell_table_sql)
+cursor.execute(create_session_table_sql)
 
 
 
@@ -143,14 +157,14 @@ def db_update(table, col_name, value, column_list, value_list):
 
 
 
-def get_market(resource_type):
+def get_market(session_id, resource_type):
 
-    resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+    resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
     command = '''SELECT name, sell.id, person_id, amount, price FROM sell
                 INNER JOIN person ON sell.person_id = person.id
-                WHERE resource_id = %d and amount > 0 ORDER BY price, sell.id''' % resource_id
+                WHERE person.session_id = %d AND resource_id = %d AND amount > 0 ORDER BY price, sell.id''' % (session_id, resource_id)
 
     cursor.execute(command)
     sell_table = cursor.fetchall()
@@ -158,11 +172,11 @@ def get_market(resource_type):
     return sell_table
 
 
-def get_num_products_for_sale(resource_type):
+def get_num_products_for_sale(session_id, resource_type):
 
-    resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+    resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
-    command = 'SELECT SUM(amount) FROM sell WHERE resource_id = %d' % resource_id
+    command = 'SELECT SUM(amount) FROM sell WHERE session_id = %d AND resource_id = %d' % (session_id, resource_id)
     cursor.execute(command)
     num_products = cursor.fetchall()
     num_products = num_products[0][0]
@@ -178,26 +192,28 @@ def get_num_products_for_sale(resource_type):
 
 
 
-def create_person(name, cash, resource_dict):
+def create_person(session_key, name, cash, resource_dict):
+
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
     b_success = False
 
     # Check if person already exists in person table
-    if not db_exists('person', column_list=['name'], value_list=[name]):
-        db_add_row('person', column_list=['name', 'cash'], value_list=[name, cash])
+    if not db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
+        db_add_row('person', column_list=['session_id', 'name', 'cash'], value_list=[session_id, name, cash])
 
-        person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
         # Add new resources to resource table
         for resource_type, resource_amount in resource_dict.items():
             # Check if that resource type is already in the resource table
-            if not db_exists('resource', column_list=['type'], value_list=[resource_type]):
+            if not db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
                 # add type to resource table
-                db_add_row('resource', column_list=['type'], value_list=[resource_type])
+                db_add_row('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
             # Add resource amounts to person_resource table
-            resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
-            db_add_row('person_resource', column_list=['person_id', 'resource_id', 'amount'], value_list=[person_id, resource_id, resource_amount])
+            resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+            db_add_row('person_resource', column_list=['session_id', 'person_id', 'resource_id', 'amount'], value_list=[session_id, person_id, resource_id, resource_amount])
 
         b_success = True
         message = 'Success (person): %s created' %name
@@ -208,59 +224,61 @@ def create_person(name, cash, resource_dict):
     return b_success, message
 
 
-def give_or_take_product(person_id, resource_id, amount):
+def give_or_take_product(session_id, person_id, resource_id, amount):
     # amount > 0: give
     # amount < 0: take
 
-    if db_exists('person_resource', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id]):
+    if db_exists('person_resource', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id]):
 
-        previous_quantity = db_get('person_resource', 'amount', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id])
+        previous_quantity = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
         new_quantity = previous_quantity + amount
-        db_update('person_resource', 'amount', new_quantity, column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id])
+        db_update('person_resource', 'amount', new_quantity, column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
 
     else:
 
         previous_quantity = 0
         new_quantity = previous_quantity + amount
-        db_add_row('person_resource', column_list=['person_id', 'resource_id', 'amount'], value_list=[person_id, resource_id, new_quantity])
+        db_add_row('person_resource', column_list=['session_id', 'person_id', 'resource_id', 'amount'], value_list=[session_id, person_id, resource_id, new_quantity])
 
 
-def pay_or_charge_person(person_id, dollars):
+def pay_or_charge_person(session_id, person_id, dollars):
     # dollars > 0: pay
     # dollars < 0: charge
 
     # pay seller
-    previous_cash = db_get('person', 'cash', column_list=['id'], value_list=[person_id])
+    previous_cash = db_get('person', 'cash', column_list=['session_id', 'id'], value_list=[session_id, person_id])
     new_cash = previous_cash + dollars
-    db_update('person', 'cash', new_cash, column_list=['id'], value_list=[person_id])
+    db_update('person', 'cash', new_cash, column_list=['session_id', 'id'], value_list=[session_id, person_id])
 
 
 
-def sell(name, resource_type, amount, price):
+def sell(session_key, name, resource_type, amount, price):
+
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
     b_success = False
 
-    if db_exists('person', column_list=['name'], value_list=[name]):
+    if db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
 
-        person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
-        if db_exists('resource', column_list=['type'], value_list=[resource_type]):
+        if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
 
-            resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+            resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
-            if db_exists('person_resource', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id]):
+            if db_exists('person_resource', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id]):
 
-                available_quantity = db_get('person_resource', 'amount', column_list=['person_id', 'resource_id'], 
-                                                value_list=[person_id, resource_id])
+                available_quantity = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], 
+                                                value_list=[session_id, person_id, resource_id])
 
                 if available_quantity >= amount:
 
-                    db_add_row('sell', column_list=['person_id', 'resource_id', 'amount', 'price'], 
-                                value_list=[person_id, resource_id, amount, price])
+                    db_add_row('sell', column_list=['session_id', 'person_id', 'resource_id', 'amount', 'price'], 
+                                value_list=[session_id, person_id, resource_id, amount, price])
 
 
                     # Take product from the seller
-                    give_or_take_product(person_id, resource_id, -1 * amount)
+                    give_or_take_product(session_id, person_id, resource_id, -1 * amount)
 
                     b_success = True
                     message = 'Success (sale): %s sells %d %s for price %.2f' % (name, amount, resource_type, price)
@@ -282,9 +300,9 @@ def sell(name, resource_type, amount, price):
     return b_success, message
 
 
-def get_price(resource_type, amount):
+def get_price(session_id, resource_type, amount):
 
-    market = get_market(resource_type)
+    market = get_market(session_id, resource_type)
 
     running_quantity = 0
     running_cost = 0
@@ -312,18 +330,20 @@ def get_price(resource_type, amount):
 
 
 
-def get_price_toplevel(resource_type, amount=1):
+def get_price_toplevel(session_key, resource_type, amount=1):
+
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
     b_success = False
     price = None
 
-    if db_exists('resource', column_list=['type'], value_list=[resource_type]):
+    if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
 
-        num_product = get_num_products_for_sale(resource_type)
+        num_product = get_num_products_for_sale(session_id, resource_type)
 
         if amount <= num_product:
 
-            price = get_price(resource_type, amount)
+            price = get_price(session_id, resource_type, amount)
 
             b_success = True
             message = 'Success (price): price for %d %s is %.2f' % (amount, resource_type, price)
@@ -339,29 +359,30 @@ def get_price_toplevel(resource_type, amount=1):
     return b_success, message, price
 
 
-def buy(name, resource_type, amount):
+def buy(session_key, name, resource_type, amount):
+
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
     b_success = False
 
-    if db_exists('person', column_list=['name'], value_list=[name]):
+    if db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
 
-        person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
-        if db_exists('resource', column_list=['type'], value_list=[resource_type]):
+        if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
 
-            resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+            resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
-            num_product = get_num_products_for_sale(resource_type)
+            num_product = get_num_products_for_sale(session_id, resource_type)
             if amount <= num_product:
 
-                # _, _, price = get_price(resource_type, amount)
-                price = get_price(resource_type, amount)
-                buyer_cash = db_get('person', 'cash', column_list=['id'], value_list=[person_id])
+                price = get_price(session_id, resource_type, amount)
+                buyer_cash = db_get('person', 'cash', column_list=['session_id', 'id'], value_list=[session_id, person_id])
 
                 if buyer_cash >= price:
 
 
-                    market = get_market(resource_type)
+                    market = get_market(session_id, resource_type)
 
                     running_quantity = 0
                     running_cost = 0
@@ -388,18 +409,18 @@ def buy(name, resource_type, amount):
                         # buy from curr_seller
                         # subtract quantity bought from seller
                         updated_quantity = curr_quantity - used_quantity
-                        db_update('sell', 'amount', updated_quantity, column_list=['id'], value_list=[curr_sale_id])
+                        db_update('sell', 'amount', updated_quantity, column_list=['session_id', 'id'], value_list=[session_id, curr_sale_id])
 
                         # pay seller
-                        pay_or_charge_person(curr_seller, cost)
+                        pay_or_charge_person(session_id, curr_seller, cost)
 
                         sell_idx += 1
 
                     # charge buyer
-                    pay_or_charge_person(person_id, -1 * running_cost)
+                    pay_or_charge_person(session_id, person_id, -1 * running_cost)
 
                     # give items to the buyer
-                    give_or_take_product(person_id, resource_id, running_quantity)
+                    give_or_take_product(session_id, person_id, resource_id, running_quantity)
 
 
                     b_success = True
@@ -424,20 +445,23 @@ def buy(name, resource_type, amount):
     return b_success, message
 
 
-def get_assets(name):
+def get_assets(session_key, name):
+
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
     cash = None
     resource_list = None
 
-    if db_exists('person', column_list=['name'], value_list=[name]):
+    if db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
 
-        cash = db_get('person', 'cash', column_list=['name'], value_list=[name])
+        cash = db_get('person', 'cash', column_list=['session_id', 'name'], value_list=[session_id, name])
 
 
-        person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
         command = '''SELECT type, resource_id, amount FROM person_resource 
-                        INNER JOIN resource ON person_resource.resource_id = resource.id WHERE person_id = %d ORDER BY resource.type''' % person_id
+                        INNER JOIN resource ON person_resource.resource_id = resource.id 
+                        WHERE resource.session_id = %d AND person_id = %d ORDER BY resource.type''' % (session_id, person_id)
 
         cursor.execute(command)
         resource_arr = cursor.fetchall()
@@ -457,12 +481,14 @@ def get_assets(name):
 
 
 
-def get_market_toplevel(resource_type):
+def get_market_toplevel(session_key, resource_type):
 
-    sell_dict = None
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
-    if db_exists('resource', column_list=['type'], value_list=[resource_type]):
-        sell_table = get_market(resource_type)
+    sell_list = None
+
+    if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+        sell_table = get_market(session_id, resource_type)
         sell_list = [{'sell_id': x['id'], 'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)]
 
 
@@ -477,9 +503,11 @@ def get_market_toplevel(resource_type):
 
 
 
-def get_people():
+def get_people(session_key):
 
-    command = '''SELECT name FROM person'''
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+
+    command = '''SELECT name FROM person WHERE session_id = %d''' % session_id
     cursor.execute(command)
     person_rows = cursor.fetchall()
 
@@ -491,9 +519,11 @@ def get_people():
     return b_success, message, person_list
 
 
-def get_resources():
+def get_resources(session_key):
 
-    command = '''SELECT type FROM resource'''
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+
+    command = '''SELECT type FROM resource WHERE session_id = %d''' % session_id
     cursor.execute(command)
     resource_rows = cursor.fetchall()
 
@@ -506,17 +536,19 @@ def get_resources():
 
 
 
-def cancel_sell(sell_id):
+def cancel_sell(session_key, sell_id):
 
-    person_id = db_get('sell', 'person_id', column_list=['id'], value_list=[sell_id])
-    resource_id = db_get('sell', 'resource_id', column_list=['id'], value_list=[sell_id])
-    amount = db_get('sell', 'amount', column_list=['id'], value_list=[sell_id])
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+
+    person_id = db_get('sell', 'person_id', column_list=['session_id', 'id'], value_list=[session_id, sell_id])
+    resource_id = db_get('sell', 'resource_id', column_list=['session_id', 'id'], value_list=[session_id, sell_id])
+    amount = db_get('sell', 'amount', column_list=['session_id', 'id'], value_list=[session_id, sell_id])
 
     # Give product back to the seller
-    give_or_take_product(person_id, resource_id, amount)
+    give_or_take_product(session_id, person_id, resource_id, amount)
 
     # Set amount to zero in sale row
-    db_update('sell', 'amount', 0, column_list=['id'], value_list=[sell_id])
+    db_update('sell', 'amount', 0, column_list=['session_id', 'id'], value_list=[session_id, sell_id])
 
     b_success = True
     message = 'SUCCESS (cancel): sale %d canceled' % sell_id
@@ -524,13 +556,14 @@ def cancel_sell(sell_id):
     return b_success, message
 
 
-def deposit_or_withdraw(name, option, dollars):
+def deposit_or_withdraw(session_key, name, option, dollars):
 
-    person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
     if option == 'withdraw':
 
-        buyer_cash = db_get('person', 'cash', column_list=['id'], value_list=[person_id])
+        buyer_cash = db_get('person', 'cash', column_list=['session_id', 'id'], value_list=[session_id, person_id])
 
         if buyer_cash < dollars:
             b_success = False
@@ -539,7 +572,7 @@ def deposit_or_withdraw(name, option, dollars):
 
         dollars = -1 * dollars
 
-    pay_or_charge_person(person_id, dollars)
+    pay_or_charge_person(session_id, person_id, dollars)
 
     b_success = True
     message = 'Success (deposit): %s %.2f with account %s' %(option, dollars, name)
@@ -548,14 +581,15 @@ def deposit_or_withdraw(name, option, dollars):
 
 
 
-def give_or_take_resource(name, resource_type, option, amount):
+def give_or_take_resource(session_key, name, resource_type, option, amount):
 
-    person_id = db_get('person', 'id', column_list=['name'], value_list=[name])
-    resource_id = db_get('resource', 'id', column_list=['type'], value_list=[resource_type])
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
+    resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
     if option == 'withdraw':
 
-        resource_amount = db_get('person_resource', 'amount', column_list=['person_id', 'resource_id'], value_list=[person_id, resource_id])
+        resource_amount = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
 
         if resource_amount < amount:
             b_success = False
@@ -564,7 +598,7 @@ def give_or_take_resource(name, resource_type, option, amount):
 
         amount = -1 * amount
 
-    give_or_take_product(person_id, resource_id, amount)
+    give_or_take_product(session_id, person_id, resource_id, amount)
 
     b_success = True
     message = 'Success (give): %s %d %s with account %s' %(option, amount, resource_type, name)
@@ -572,10 +606,12 @@ def give_or_take_resource(name, resource_type, option, amount):
     return b_success, message
 
 
-def new_resource(resource_type):
+def new_resource(session_key, resource_type):
 
-    if not db_exists('resource', column_list=['type'], value_list=[resource_type]):
-        db_add_row('resource', column_list=['type'], value_list=[resource_type])
+    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+
+    if not db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+        db_add_row('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
         b_success = True
         message = 'Success (new_resource): %s added to resource table' %resource_type
@@ -585,6 +621,23 @@ def new_resource(resource_type):
         message = 'Failure (new_resource): %s already exists in resource table' %resource_type
 
     return b_success, message
+
+
+
+def create_session(session_key):
+
+    if not db_exists('session', column_list=['session_key'], value_list=[session_key]):
+        db_add_row('session', column_list=['session_key'], value_list=[session_key])
+
+        b_success = True
+        message = 'Success (session): session key %s created' %session_key
+
+    else:
+        b_success = True
+        message = 'Success (session): session key %s already exists' %session_key
+
+    return b_success, message
+
 
 
 
@@ -598,11 +651,12 @@ def api_create_person():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         name = data['name']
         cash = data['cash']
         resource_dict = data['resource_dict']
 
-        b_success, message = create_person(name, cash, resource_dict)
+        b_success, message = create_person(session_key, name, cash, resource_dict)
 
         return_data = {
                         'name': name
@@ -620,12 +674,13 @@ def api_sell():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         name = data['name']
         resource_type = data['resource_type']
         amount = data['amount']
         price = data['price']
 
-        b_success, message = sell(name, resource_type, amount, price)
+        b_success, message = sell(session_key, name, resource_type, amount, price)
 
         return_data = {
                         'name': name
@@ -643,11 +698,12 @@ def api_buy():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         name = data['name']
         resource_type = data['resource_type']
         amount = data['amount']
 
-        b_success, message = buy(name, resource_type, amount)
+        b_success, message = buy(session_key, name, resource_type, amount)
 
         return_data = {
                         'name': name
@@ -665,11 +721,12 @@ def api_get_price():
 
         amount = 1
 
+        session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
         if 'amount' in request.args:
             amount = int(request.args.get('amount'))
 
-        b_success, message, price = get_price_toplevel(resource_type, amount)
+        b_success, message, price = get_price_toplevel(session_key, resource_type, amount)
 
         return_data = {
                         'resource_type': resource_type,
@@ -686,9 +743,10 @@ def api_get_price():
 def api_get_assets():
     if request.method == 'GET':
 
+        session_key = request.args.get('session_key')
         name = request.args.get('name')
 
-        b_success, message, cash, resource_list = get_assets(name)
+        b_success, message, cash, resource_list = get_assets(session_key, name)
 
 
         return_data = {
@@ -709,9 +767,10 @@ def api_get_assets():
 def api_get_market():
     if request.method == 'GET':
 
+        session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
 
-        b_success, message, sell_list = get_market_toplevel(resource_type)
+        b_success, message, sell_list = get_market_toplevel(session_key, resource_type)
 
         return_data = {
                         'resource_type': resource_type,
@@ -728,7 +787,9 @@ def api_get_market():
 def api_get_people():
     if request.method == 'GET':
 
-        b_success, message, person_list = get_people()
+        session_key = request.args.get('session_key')
+
+        b_success, message, person_list = get_people(session_key)
         
         return_data = {
                         'people': person_list
@@ -744,11 +805,14 @@ def api_get_people():
 def api_get_resources():
     if request.method == 'GET':
 
-        b_success, message, resource_list = get_resources()
+        session_key = request.args.get('session_key')
+
+        b_success, message, resource_list = get_resources(session_key)
         
         return_data = {
                         'resources': resource_list
                         }
+
 
         response = {'message': message, 'data': return_data}
         return jsonify(response), 201  # Return a JSON response with status code 201
@@ -761,10 +825,11 @@ def api_cancel_sale():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         sell_id = data['sell_id']
 
 
-        b_success, message = cancel_sell(sell_id)
+        b_success, message = cancel_sell(session_key, sell_id)
 
 
         return_data = {
@@ -782,11 +847,12 @@ def api_deposit_or_withdraw():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         name = data['name']
         option = data['option']
         dollars = data['dollars']
 
-        b_success, message = deposit_or_withdraw(name, option, dollars)
+        b_success, message = deposit_or_withdraw(session_key, name, option, dollars)
 
         return_data = {
                         'name': name
@@ -803,12 +869,13 @@ def api_give_or_take_resource():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         name = data['name']
         resource_type = data['resource_type']
         option = data['option']
         amount = data['amount']
 
-        b_success, message = give_or_take_resource(name, resource_type, option, amount)
+        b_success, message = give_or_take_resource(session_key, name, resource_type, option, amount)
 
         return_data = {
                         'name': name
@@ -825,12 +892,32 @@ def api_new_resource():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
+        session_key = data['session_key']
         resource_type = data['resource_type']
 
-        b_success, message = new_resource(resource_type)
+        b_success, message = new_resource(session_key, resource_type)
 
         return_data = {
                         'resource_type': resource_type
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
+
+@app.route('/create_session', methods=['POST'])
+def api_create_session():
+    if request.method == 'POST':
+        data = request.get_json()  # Get JSON data from the request body
+
+        session_key = data['session_key']
+
+        b_success, message = create_session(session_key)
+
+        return_data = {
+                        'session_key': session_key
                         }
 
         response = {'message': message, 'data': return_data}

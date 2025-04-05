@@ -90,15 +90,17 @@ export default {
 
       newResourceType: null,
 
-      typingSessionID: null,
-      sessionID: null,
+      typingSessionKey: null,
+      sessionKey: null,
+
+      data_sessionKey: null,
 
     };
   },
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    this.getResources();
+    // this.getResources();
   },
 
   methods: {
@@ -106,7 +108,9 @@ export default {
     async getMarket(resource_type) {
       try {
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'resource_type': resource_type };
+        const params = {  'session_key': this.sessionKey,
+                          'resource_type': resource_type 
+                        };
 
         const response = await axios({
           method: 'get',
@@ -129,7 +133,8 @@ export default {
     async getPrice(resource_type, amount) {
       try {
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'resource_type': resource_type,
+        const params = { 'session_key': this.sessionKey,
+                         'resource_type': resource_type,
                          'amount': amount };
 
         const response = await axios({
@@ -156,7 +161,9 @@ export default {
     async getAssets(name) {
       try {
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'name': String(name) };
+        const params = {  'session_key': this.sessionKey,
+                          'name': String(name) 
+                        };
 
         const response = await axios({
           method: 'get',
@@ -182,11 +189,14 @@ export default {
     async getPeople() {
       try {
         const headers = { 'Content-Type': 'application/json' };
+        const params = {  'session_key': this.sessionKey,
+                        };
 
         const response = await axios({
           method: 'get',
           url: 'http://127.0.0.1:5000/get_people',
           headers: headers,
+          params: params,
         });
 
         console.log(response.data);
@@ -203,11 +213,14 @@ export default {
     async getResources() {
       try {
         const headers = { 'Content-Type': 'application/json' };
+        const params = {  'session_key': this.sessionKey,
+                        };
 
         const response = await axios({
           method: 'get',
           url: 'http://127.0.0.1:5000/get_resources',
           headers: headers,
+          params: params,
         });
 
         console.log(response.data);
@@ -225,7 +238,8 @@ export default {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'name': String(name),
+        const body = { 'session_key': this.sessionKey,
+                       'name': String(name),
                        'cash': 0,
                        'resource_dict': {} };
                        // 'resource_dict': {'apple': 4} };
@@ -255,7 +269,8 @@ export default {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'name': name,
+        const body = { 'session_key': this.sessionKey,
+                       'name': name,
                        'resource_type': resource_type,
                        'amount': amount,
                        'price': price };
@@ -292,7 +307,8 @@ export default {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'name': name,
+        const body = { 'session_key': this.sessionKey,
+                       'name': name,
                        'resource_type': resource_type,
                        'amount': amount };
 
@@ -330,7 +346,9 @@ export default {
       try {
         const headers = { 'Content-Type': 'application/json' };
 
-        const body = { 'sell_id': sell_id };
+        const body = {  'session_key': this.sessionKey,
+                        'sell_id': sell_id 
+                      };
 
         const response = await axios({
           method: 'post',
@@ -389,11 +407,6 @@ export default {
     },
 
 
-    async setSessionID(sessionID) {
-      this.sessionID = sessionID;
-      this.typingSessionID = null;
-    },
-
 
     async getMarketForPerson(resource_type) {
 
@@ -442,8 +455,6 @@ export default {
     async depositOrWithdraw() {
 
       try {
-        const headers = { 'Content-Type': 'application/json' };
-
 
         var deposit_or_withdraw_str = ''
         if (this.adminDepositWithdraw == 'Deposit') {
@@ -455,7 +466,10 @@ export default {
           deposit_or_withdraw_str = 'withdraw';
         }
 
-        const body = { 'name': this.currentPerson,
+
+        const headers = { 'Content-Type': 'application/json' };
+        const body = { 'session_key': this.sessionKey,
+                       'name': this.currentPerson,
                        'option': deposit_or_withdraw_str,
                        'dollars': this.adminMoney
                       };
@@ -498,7 +512,8 @@ export default {
           deposit_or_withdraw_str = 'withdraw';
         }
 
-        const body = { 'name': this.currentPerson,
+        const body = { 'session_key': this.sessionKey,
+                       'name': this.currentPerson,
                        'resource_type': this.adminSelectedResource,
                        'option': deposit_or_withdraw_str,
                        'amount': this.adminResourceAmount
@@ -532,6 +547,7 @@ export default {
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 
+                       'session_key': this.sessionKey,
                        'resource_type': String(resource_type)
                       };
 
@@ -555,7 +571,51 @@ export default {
       this.newResourceType = null;
 
       // update
-      this.getResources();
+      await this.getResources();
+
+    },
+
+
+
+    async setSessionKey() {
+      this.sessionKey = this.typingSessionKey;
+      this.typingSessionKey = null;
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+        const body = { 'session_key': this.sessionKey,
+                       };
+
+        const response = await axios({
+          method: 'post',
+          url: 'http://127.0.0.1:5000/create_session',
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.data_sessionKey = response.data;
+        this.error = null;
+      } catch (err) {
+        this.data_sessionKey = null;
+        this.error = err.message;
+      }
+
+      // reset
+      this.currentPerson = null;
+      this.selectPersonButton = null;
+      this.money = null;
+      this.data_getAssets = null;
+      this.currentResource = null;
+      this.data_getResources = null;
+      this.selectedResource = null;
+      this.selectButtonPerson = null;
+
+      // start
+      await this.getResources();
+
 
     },
 
@@ -592,19 +652,19 @@ export default {
     <div class="flexbox-container-top">
       <div class="flexbox-item flexbox-item-4">
 
-        <div v-if="sessionID">
-          <p style="font-weight: bold;" class="relative text-xl text-center">Session ID: {{ sessionID }}</p>
+        <div v-if="sessionKey">
+          <p style="font-weight: bold;" class="relative text-xl text-center">Session key: {{ sessionKey }}</p>
         </div>
         <div v-else>
-          <p class="relative text-xl text-center">Enter a new or existing Session ID</p>
+          <p class="relative text-xl text-center">Enter a new or existing Session key</p>
         </div>
 
         <div style="text-align:center;">
-          <InputText type="text" v-model="typingSessionID" placeholder="Session ID" style="text-align:center;" />
+          <InputText type="text" v-model="typingSessionKey" placeholder="Session key" style="text-align:center;" />
         </div>
 
-        <div v-if="typingSessionID" style="text-align:center;">
-          <Button style="width: 200px;" type="submit" severity="success" label="Submit" @click="setSessionID(typingSessionID)" rounded />
+        <div v-if="typingSessionKey" style="text-align:center;">
+          <Button style="width: 200px;" type="submit" severity="success" label="Submit" @click="setSessionKey" rounded />
         </div>
 
       </div>
@@ -627,15 +687,18 @@ export default {
         </div>
         <br>
 
-        <div v-if="currentPerson">
-          <p style="font-weight: bold;" class="relative text-xl text-center">Name: {{ currentPerson }}</p>
-        </div>
-        <div v-else>
-          <p class="relative text-xl text-center">Select or create a person</p>
+        <div v-if="sessionKey">
+          <div v-if="currentPerson">
+            <p style="font-weight: bold;" class="relative text-xl text-center">Name: {{ currentPerson }}</p>
+          </div>
+          <div v-else>
+            <p class="relative text-xl text-center">Select or create a person</p>
+          </div>
+
+          <SelectButton v-model="selectButtonPerson" @click="buttonSelectOrCreatePerson(selectButtonPerson)" :options="['Select person', 'Create person']" />
+
         </div>
 
-
-        <SelectButton v-model="selectButtonPerson" @click="buttonSelectOrCreatePerson(selectButtonPerson)" :options="['Select person', 'Create person']" />
 
 
         <div v-if="selectPersonButton">
@@ -806,12 +869,16 @@ export default {
         </div>
         <br>
 
-        <div v-if="currentResource">
-          <p style="font-weight: bold;" class="relative text-xl text-center">Resource: {{ currentResource }}</p>
+
+        <div v-if="data_getResources">
+          <div v-if="currentResource">
+            <p style="font-weight: bold;" class="relative text-xl text-center">Resource: {{ currentResource }}</p>
+          </div>
+          <div v-else>
+            <p class="relative text-xl text-center">Select a resource</p>
+          </div>
         </div>
-        <div v-else>
-          <p class="relative text-xl text-center">Select a resource</p>
-        </div>
+
 
         <div v-if="data_getResources">
           <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
