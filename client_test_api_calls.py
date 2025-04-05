@@ -14,6 +14,14 @@ names = ['Martin Tubins', 'Ryan Loaf', 'Andrew Harrington', 'Alicia Kind', 'Zara
 # resources = ['apple', 'orange', 'tomato']
 resources = ['apple', 'orange', 'tomato', 'coconut', 'banana', 'mango']
 
+session_key = 'debug'
+
+
+def create_session():
+
+    data = {'session_key': session_key}
+    response = requests.post(url + 'create_session', json=data)
+    print(response.json())
 
 
 def create_person():
@@ -25,7 +33,7 @@ def create_person():
         if random.randint(0, 1):
             resource_dict[resource] = random.randint(0, 60)
 
-    data = {'name': name, 'cash': cash, 'resource_dict': resource_dict}
+    data = {'session_key': session_key, 'name': name, 'cash': cash, 'resource_dict': resource_dict}
 
     response = requests.post(url + 'create_person', json=data)
     print(response.json())
@@ -41,7 +49,7 @@ def sell(name):
     # price = random.randint(1, 15)
     price = round(0.01 + (14.99 * random.random()), 2)
 
-    data = {'name': name, 'resource_type': resource_type, 'amount': amount, 'price': price}
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'amount': amount, 'price': price}
 
     response = requests.post(url + 'sell', json=data)
     print(response.json())
@@ -52,7 +60,7 @@ def buy(name):
     resource_type = resources[random.randint(0, len(resources) - 1)]
     amount = random.randint(1, 15)
 
-    data = {'name': name, 'resource_type': resource_type, 'amount': amount}
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'amount': amount}
 
     response = requests.post(url + 'buy', json=data)
     print(response.json())
@@ -60,17 +68,18 @@ def buy(name):
 
 
 def examples(num_iter=1):
-    existing_names = []
+
+    create_session()
 
     for i in range(num_iter):
 
+        print('')
+
         name = create_person()
-        existing_names.append(name)
 
         sell(name)
         sell(name)
         buy(name)
-        print('')
 
 
 

@@ -994,7 +994,7 @@ export default {
 .flexbox-container-top {
   display: flex;
   justify-content: space-around;
-  height: 20vh;
+  height: 18vh;
   width: 90vw;
 }
 
@@ -1008,7 +1008,7 @@ export default {
 .flexbox-container {
   display: flex;
   justify-content: space-around;
-  height: 80vh;
+  height: 82vh;
   width: 90vw;
 }
 
