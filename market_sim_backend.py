@@ -4,6 +4,8 @@ import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
+from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
 
 '''
@@ -19,6 +21,79 @@ conn.row_factory = sqlite3.Row
 # Create a cursor object to execute SQL commands
 cursor = conn.cursor()
 
+
+
+Base = declarative_base()
+
+
+class Session(Base):
+    __tablename__ = 'session'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_key = Column(String)
+
+
+
+class Person(Base):
+    __tablename__ = 'person'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    name = Column(String)
+    cash = Column(Float)
+
+
+class Resource(Base):
+    __tablename__ = 'resource'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    type = Column(String)
+
+
+class PersonResource(Base):
+    __tablename__ = 'person_resource'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    person_id = Column(Integer, ForeignKey('person.id'))
+    resource_id = Column(Integer, ForeignKey('resource.id'))
+    amount = Column(Integer)
+
+class Sell(Base):
+    __tablename__ = 'sell'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    person_id = Column(Integer, ForeignKey('person.id'))
+    resource_id = Column(Integer, ForeignKey('resource.id'))
+    amount = Column(Integer)
+    price = Column(Float)
+
+
+
+
+# Set up the database
+engine = create_engine('sqlite:///database.db')
+Base.metadata.create_all(engine)
+
+# Create a session
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+# Add user and profile
+# user = User(name='Alice')
+# user.profile = UserProfile(bio='Hello, I love SQLAlchemy!')
+
+# session.add(user)
+# session.commit()
+
+
+
+
+
+"""
 # Define the SQL command to create the table
 create_person_table_sql = '''
     CREATE TABLE IF NOT EXISTS person (
@@ -53,7 +128,7 @@ create_sell_table_sql = '''
     person_id INTEGER,
     resource_id INTEGER,
     amount INTEGER,
-    price INTEGER
+    price REAL
 );
 '''
 
@@ -77,6 +152,7 @@ cursor.execute(create_session_table_sql)
 
 # Commit the changes
 conn.commit()
+"""
 
 # Close the connection
 # conn.close()
