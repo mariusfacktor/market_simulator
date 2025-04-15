@@ -78,8 +78,8 @@ engine = create_engine('sqlite:///database.db')
 Base.metadata.create_all(engine)
 
 # Create a session
-Session = sessionmaker(bind=engine)
-session = Session()
+Session_sqlalchemy = sessionmaker(bind=engine)
+session = Session_sqlalchemy()
 
 
 # Add user and profile
@@ -173,18 +173,6 @@ def where_str(column_list, value_list):
     return criteria_str
 
 
-def db_exists(table, column_list, value_list):
-
-    criteria_str = where_str(column_list, value_list)
-
-    command = 'SELECT EXISTS(SELECT 1 FROM %s WHERE %s);' %(table, criteria_str)
-    cursor.execute(command)
-    if cursor.fetchone()[0]:
-        return True
-    else:
-        return False
-
-
 def db_add_row(table, column_list, value_list):
     value_list = tuple(value_list)
 
@@ -275,7 +263,7 @@ def create_person(session_key, name, cash, resource_dict):
     b_success = False
 
     # Check if person already exists in person table
-    if not db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
+    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         db_add_row('person', column_list=['session_id', 'name', 'cash'], value_list=[session_id, name, cash])
 
         person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
@@ -283,7 +271,7 @@ def create_person(session_key, name, cash, resource_dict):
         # Add new resources to resource table
         for resource_type, resource_amount in resource_dict.items():
             # Check if that resource type is already in the resource table
-            if not db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+            if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
                 # add type to resource table
                 db_add_row('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
@@ -304,7 +292,9 @@ def give_or_take_product(session_id, person_id, resource_id, amount):
     # amount > 0: give
     # amount < 0: take
 
-    if db_exists('person_resource', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id]):
+    if session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                            PersonResource.person_id == person_id,
+                                            PersonResource.resource_id == resource_id).all():
 
         previous_quantity = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
         new_quantity = previous_quantity + amount
@@ -334,15 +324,17 @@ def sell(session_key, name, resource_type, amount, price):
 
     b_success = False
 
-    if db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
+    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
         person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
-        if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+        if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
             resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
-            if db_exists('person_resource', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id]):
+            if session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                                    PersonResource.person_id == person_id,
+                                                    PersonResource.resource_id == resource_id).all():
 
                 available_quantity = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], 
                                                 value_list=[session_id, person_id, resource_id])
@@ -413,7 +405,7 @@ def get_price_toplevel(session_key, resource_type, amount=1):
     b_success = False
     price = None
 
-    if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+    if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
         num_product = get_num_products_for_sale(session_id, resource_type)
 
@@ -441,11 +433,11 @@ def buy(session_key, name, resource_type, amount):
 
     b_success = False
 
-    if db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
+    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
         person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
-        if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+        if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
             resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
@@ -528,7 +520,7 @@ def get_assets(session_key, name):
     cash = None
     resource_list = None
 
-    if db_exists('person', column_list=['session_id', 'name'], value_list=[session_id, name]):
+    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
         cash = db_get('person', 'cash', column_list=['session_id', 'name'], value_list=[session_id, name])
 
@@ -563,7 +555,7 @@ def get_market_toplevel(session_key, resource_type):
 
     sell_list = None
 
-    if db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+    if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         sell_table = get_market(session_id, resource_type)
         sell_list = [{'sell_id': x['id'], 'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)]
 
@@ -686,7 +678,7 @@ def new_resource(session_key, resource_type):
 
     session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
-    if not db_exists('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type]):
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         db_add_row('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
 
         b_success = True
@@ -702,7 +694,7 @@ def new_resource(session_key, resource_type):
 
 def create_session(session_key):
 
-    if not db_exists('session', column_list=['session_key'], value_list=[session_key]):
+    if not session.query(Session).filter(Session.session_key == session_key).all():
         db_add_row('session', column_list=['session_key'], value_list=[session_key])
 
         b_success = True

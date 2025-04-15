@@ -100,7 +100,6 @@ export default {
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    // this.getResources();
   },
 
   methods: {
