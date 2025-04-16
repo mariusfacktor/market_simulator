@@ -173,26 +173,6 @@ def where_str(column_list, value_list):
     return criteria_str
 
 
-def db_add_row(table, column_list, value_list):
-    value_list = tuple(value_list)
-
-    columns_str = '('
-    question_mark_str = '('
-    num_columns = len(column_list)
-    for i in range(num_columns):
-        columns_str += column_list[i]
-        question_mark_str += '?'
-        if i < num_columns - 1:
-            columns_str += ', '
-            question_mark_str += ', '
-    columns_str += ')'
-    question_mark_str += ')'
-
-    command = 'INSERT INTO %s %s VALUES %s' %(table, columns_str, question_mark_str)
-    cursor.execute(command, value_list)
-
-    conn.commit()
-
 
 def db_get(table, col_name, column_list, value_list):
 
@@ -264,7 +244,9 @@ def create_person(session_key, name, cash, resource_dict):
 
     # Check if person already exists in person table
     if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
-        db_add_row('person', column_list=['session_id', 'name', 'cash'], value_list=[session_id, name, cash])
+        new_person = Person(session_id=session_id, name=name, cash=cash)
+        session.add(new_person)
+        session.commit()
 
         person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
 
@@ -273,11 +255,15 @@ def create_person(session_key, name, cash, resource_dict):
             # Check if that resource type is already in the resource table
             if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
                 # add type to resource table
-                db_add_row('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+                new_resource = Resource(session_id=session_id, type=resource_type)
+                session.add(new_resource)
+                session.commit()
 
             # Add resource amounts to person_resource table
             resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
-            db_add_row('person_resource', column_list=['session_id', 'person_id', 'resource_id', 'amount'], value_list=[session_id, person_id, resource_id, resource_amount])
+            new_person_resource = PersonResource(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=resource_amount)
+            session.add(new_person_resource)
+            session.commit()
 
         b_success = True
         message = 'Success (person): %s created' %name
@@ -304,7 +290,9 @@ def give_or_take_product(session_id, person_id, resource_id, amount):
 
         previous_quantity = 0
         new_quantity = previous_quantity + amount
-        db_add_row('person_resource', column_list=['session_id', 'person_id', 'resource_id', 'amount'], value_list=[session_id, person_id, resource_id, new_quantity])
+        new_person_resource = PersonResource(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=new_quantity)
+        session.add(new_person_resource)
+        session.commit()
 
 
 def pay_or_charge_person(session_id, person_id, dollars):
@@ -341,8 +329,9 @@ def sell(session_key, name, resource_type, amount, price):
 
                 if available_quantity >= amount:
 
-                    db_add_row('sell', column_list=['session_id', 'person_id', 'resource_id', 'amount', 'price'], 
-                                value_list=[session_id, person_id, resource_id, amount, price])
+                    new_sell_order = Sell(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=amount, price=price)
+                    session.add(new_sell_order)
+                    session.commit()
 
 
                     # Take product from the seller
@@ -679,7 +668,9 @@ def new_resource(session_key, resource_type):
     session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
 
     if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-        db_add_row('resource', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+        new_resource = Resource(session_id=session_id, type=resource_type)
+        session.add(new_resource)
+        session.commit()
 
         b_success = True
         message = 'Success (new_resource): %s added to resource table' %resource_type
@@ -695,7 +686,9 @@ def new_resource(session_key, resource_type):
 def create_session(session_key):
 
     if not session.query(Session).filter(Session.session_key == session_key).all():
-        db_add_row('session', column_list=['session_key'], value_list=[session_key])
+        new_session = Session(session_key=session_key)
+        session.add(new_session)
+        session.commit()
 
         b_success = True
         message = 'Success (session): session key %s created' %session_key
