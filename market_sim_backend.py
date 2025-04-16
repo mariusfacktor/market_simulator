@@ -82,81 +82,6 @@ Session_sqlalchemy = sessionmaker(bind=engine)
 session = Session_sqlalchemy()
 
 
-# Add user and profile
-# user = User(name='Alice')
-# user.profile = UserProfile(bio='Hello, I love SQLAlchemy!')
-
-# session.add(user)
-# session.commit()
-
-
-
-
-
-"""
-# Define the SQL command to create the table
-create_person_table_sql = '''
-    CREATE TABLE IF NOT EXISTS person (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id INTEGER,
-    name TEXT NOT NULL,
-    cash REAL
-);
-'''
-
-create_resource_table_sql = '''
-    CREATE TABLE IF NOT EXISTS resource (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id INTEGER,
-    type TEXT NOT NULL
-);
-'''
-
-create_person_resource_table_sql = '''
-    CREATE TABLE IF NOT EXISTS person_resource (
-    session_id INTEGER,
-    person_id INTEGER,
-    resource_id INTEGER,
-    amount INTEGER
-);
-'''
-
-create_sell_table_sql = '''
-    CREATE TABLE IF NOT EXISTS sell (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id INTEGER,
-    person_id INTEGER,
-    resource_id INTEGER,
-    amount INTEGER,
-    price REAL
-);
-'''
-
-
-create_session_table_sql = '''
-    CREATE TABLE IF NOT EXISTS session (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_key TEXT NOT NULL
-);
-'''
-
-
-# Execute the SQL command
-cursor.execute(create_person_table_sql)
-cursor.execute(create_resource_table_sql)
-cursor.execute(create_person_resource_table_sql)
-cursor.execute(create_sell_table_sql)
-cursor.execute(create_session_table_sql)
-
-
-
-# Commit the changes
-conn.commit()
-"""
-
-# Close the connection
-# conn.close()
-
 
 
 def where_str(column_list, value_list):
@@ -173,16 +98,6 @@ def where_str(column_list, value_list):
     return criteria_str
 
 
-
-def db_get(table, col_name, column_list, value_list):
-
-    criteria_str = where_str(column_list, value_list)
-
-    command = 'SELECT %s FROM %s WHERE %s;' %(col_name, table, criteria_str)
-
-    cursor.execute(command)
-    ret_id = cursor.fetchone()[0]
-    return ret_id
 
 def db_update(table, col_name, value, column_list, value_list):
 
@@ -203,7 +118,8 @@ def db_update(table, col_name, value, column_list, value_list):
 
 def get_market(session_id, resource_type):
 
-    resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
     command = '''SELECT name, sell.id, person_id, amount, price FROM sell
@@ -218,7 +134,7 @@ def get_market(session_id, resource_type):
 
 def get_num_products_for_sale(session_id, resource_type):
 
-    resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
     command = 'SELECT SUM(amount) FROM sell WHERE session_id = %d AND resource_id = %d' % (session_id, resource_id)
     cursor.execute(command)
@@ -238,7 +154,7 @@ def get_num_products_for_sale(session_id, resource_type):
 
 def create_person(session_key, name, cash, resource_dict):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     b_success = False
 
@@ -248,7 +164,7 @@ def create_person(session_key, name, cash, resource_dict):
         session.add(new_person)
         session.commit()
 
-        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
+        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
         # Add new resources to resource table
         for resource_type, resource_amount in resource_dict.items():
@@ -260,7 +176,8 @@ def create_person(session_key, name, cash, resource_dict):
                 session.commit()
 
             # Add resource amounts to person_resource table
-            resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+            resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
             new_person_resource = PersonResource(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=resource_amount)
             session.add(new_person_resource)
             session.commit()
@@ -282,9 +199,12 @@ def give_or_take_product(session_id, person_id, resource_id, amount):
                                             PersonResource.person_id == person_id,
                                             PersonResource.resource_id == resource_id).all():
 
-        previous_quantity = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
+        previous_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                                 PersonResource.person_id == person_id, 
+                                                                 PersonResource.resource_id == resource_id).one().amount
         new_quantity = previous_quantity + amount
-        db_update('person_resource', 'amount', new_quantity, column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
+        db_update('person_resource', 'amount', new_quantity, column_list=['session_id', 'person_id', 'resource_id'], 
+                                                             value_list=[session_id, person_id, resource_id])
 
     else:
 
@@ -300,7 +220,7 @@ def pay_or_charge_person(session_id, person_id, dollars):
     # dollars < 0: charge
 
     # pay seller
-    previous_cash = db_get('person', 'cash', column_list=['session_id', 'id'], value_list=[session_id, person_id])
+    previous_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
     new_cash = previous_cash + dollars
     db_update('person', 'cash', new_cash, column_list=['session_id', 'id'], value_list=[session_id, person_id])
 
@@ -308,24 +228,25 @@ def pay_or_charge_person(session_id, person_id, dollars):
 
 def sell(session_key, name, resource_type, amount, price):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     b_success = False
 
     if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
-        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
+        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
         if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
-            resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+            resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
             if session.query(PersonResource).filter(PersonResource.session_id == session_id,
                                                     PersonResource.person_id == person_id,
                                                     PersonResource.resource_id == resource_id).all():
 
-                available_quantity = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], 
-                                                value_list=[session_id, person_id, resource_id])
+                available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                                          PersonResource.person_id == person_id, 
+                                                                          PersonResource.resource_id == resource_id).one().amount
 
                 if available_quantity >= amount:
 
@@ -389,7 +310,7 @@ def get_price(session_id, resource_type, amount):
 
 def get_price_toplevel(session_key, resource_type, amount=1):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     b_success = False
     price = None
@@ -418,23 +339,23 @@ def get_price_toplevel(session_key, resource_type, amount=1):
 
 def buy(session_key, name, resource_type, amount):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     b_success = False
 
     if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
-        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
+        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
         if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
-            resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+            resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
             num_product = get_num_products_for_sale(session_id, resource_type)
             if amount <= num_product:
 
                 price = get_price(session_id, resource_type, amount)
-                buyer_cash = db_get('person', 'cash', column_list=['session_id', 'id'], value_list=[session_id, person_id])
+                buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
 
                 if buyer_cash >= price:
 
@@ -504,17 +425,17 @@ def buy(session_key, name, resource_type, amount):
 
 def get_assets(session_key, name):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     cash = None
     resource_list = None
 
     if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
-        cash = db_get('person', 'cash', column_list=['session_id', 'name'], value_list=[session_id, name])
+        cash = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().cash
 
 
-        person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
+        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
         command = '''SELECT type, resource_id, amount FROM person_resource 
                         INNER JOIN resource ON person_resource.resource_id = resource.id 
@@ -540,7 +461,7 @@ def get_assets(session_key, name):
 
 def get_market_toplevel(session_key, resource_type):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     sell_list = None
 
@@ -562,7 +483,7 @@ def get_market_toplevel(session_key, resource_type):
 
 def get_people(session_key):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     command = '''SELECT name FROM person WHERE session_id = %d''' % session_id
     cursor.execute(command)
@@ -578,7 +499,7 @@ def get_people(session_key):
 
 def get_resources(session_key):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     command = '''SELECT type FROM resource WHERE session_id = %d''' % session_id
     cursor.execute(command)
@@ -595,11 +516,11 @@ def get_resources(session_key):
 
 def cancel_sell(session_key, sell_id):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    person_id = db_get('sell', 'person_id', column_list=['session_id', 'id'], value_list=[session_id, sell_id])
-    resource_id = db_get('sell', 'resource_id', column_list=['session_id', 'id'], value_list=[session_id, sell_id])
-    amount = db_get('sell', 'amount', column_list=['session_id', 'id'], value_list=[session_id, sell_id])
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+    amount = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().amount
 
     # Give product back to the seller
     give_or_take_product(session_id, person_id, resource_id, amount)
@@ -615,12 +536,12 @@ def cancel_sell(session_key, sell_id):
 
 def deposit_or_withdraw(session_key, name, option, dollars):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
-    person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
     if option == 'withdraw':
 
-        buyer_cash = db_get('person', 'cash', column_list=['session_id', 'id'], value_list=[session_id, person_id])
+        buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
 
         if buyer_cash < dollars:
             b_success = False
@@ -640,13 +561,15 @@ def deposit_or_withdraw(session_key, name, option, dollars):
 
 def give_or_take_resource(session_key, name, resource_type, option, amount):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
-    person_id = db_get('person', 'id', column_list=['session_id', 'name'], value_list=[session_id, name])
-    resource_id = db_get('resource', 'id', column_list=['session_id', 'type'], value_list=[session_id, resource_type])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
     if option == 'withdraw':
 
-        resource_amount = db_get('person_resource', 'amount', column_list=['session_id', 'person_id', 'resource_id'], value_list=[session_id, person_id, resource_id])
+        resource_amount = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                               PersonResource.person_id == person_id, 
+                                                               PersonResource.resource_id == resource_id).one().amount
 
         if resource_amount < amount:
             b_success = False
@@ -665,7 +588,7 @@ def give_or_take_resource(session_key, name, resource_type, option, amount):
 
 def new_resource(session_key, resource_type):
 
-    session_id = db_get('session', 'id', column_list=['session_key'], value_list=[session_key])
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         new_resource = Resource(session_id=session_id, type=resource_type)
