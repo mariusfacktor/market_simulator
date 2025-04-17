@@ -611,6 +611,7 @@ export default {
       this.data_getResources = null;
       this.selectedResource = null;
       this.selectButtonPerson = null;
+      this.adminToggle = null;
 
       // start
       await this.getResources();

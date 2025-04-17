@@ -84,38 +84,6 @@ session = Session_sqlalchemy()
 
 
 
-def where_str(column_list, value_list):
-    num_criteria = len(column_list)
-    criteria_str = ''
-    for i in range(num_criteria):
-        if isinstance(value_list[i], str):
-            criteria_str += '%s = "%s"' %(column_list[i], value_list[i])
-        else:
-            criteria_str += '%s = %d' %(column_list[i], value_list[i])
-        if i < num_criteria - 1:
-            criteria_str += ' and '
-
-    return criteria_str
-
-
-
-def db_update(table, col_name, value, column_list, value_list):
-
-    criteria_str = where_str(column_list, value_list)
-
-    if isinstance(value, str):
-        command = 'UPDATE %s SET %s = "%s" WHERE %s;' %(table, col_name, value, criteria_str)
-    else:
-        command = 'UPDATE %s SET %s = %f WHERE %s;' %(table, col_name, value, criteria_str)
-
-    cursor.execute(command)
-
-    conn.commit()
-
-
-
-
-
 def get_market(session_id, resource_type):
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
@@ -203,8 +171,12 @@ def give_or_take_product(session_id, person_id, resource_id, amount):
                                                                  PersonResource.person_id == person_id, 
                                                                  PersonResource.resource_id == resource_id).one().amount
         new_quantity = previous_quantity + amount
-        db_update('person_resource', 'amount', new_quantity, column_list=['session_id', 'person_id', 'resource_id'], 
-                                                             value_list=[session_id, person_id, resource_id])
+
+        obj = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                   PersonResource.person_id == person_id,
+                                                   PersonResource.resource_id == resource_id).one()
+        obj.amount = new_quantity
+        session.commit()
 
     else:
 
@@ -222,7 +194,11 @@ def pay_or_charge_person(session_id, person_id, dollars):
     # pay seller
     previous_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
     new_cash = previous_cash + dollars
-    db_update('person', 'cash', new_cash, column_list=['session_id', 'id'], value_list=[session_id, person_id])
+
+    obj = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one()
+    obj.cash = new_cash
+    session.commit()
+
 
 
 
@@ -387,7 +363,10 @@ def buy(session_key, name, resource_type, amount):
                         # buy from curr_seller
                         # subtract quantity bought from seller
                         updated_quantity = curr_quantity - used_quantity
-                        db_update('sell', 'amount', updated_quantity, column_list=['session_id', 'id'], value_list=[session_id, curr_sale_id])
+
+                        obj = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == curr_sale_id).one()
+                        obj.amount = updated_quantity
+                        session.commit()
 
                         # pay seller
                         pay_or_charge_person(session_id, curr_seller, cost)
@@ -526,7 +505,9 @@ def cancel_sell(session_key, sell_id):
     give_or_take_product(session_id, person_id, resource_id, amount)
 
     # Set amount to zero in sale row
-    db_update('sell', 'amount', 0, column_list=['session_id', 'id'], value_list=[session_id, sell_id])
+    obj = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one()
+    obj.amount = 0
+    session.commit()
 
     b_success = True
     message = 'SUCCESS (cancel): sale %d canceled' % sell_id
