@@ -369,7 +369,7 @@ export default {
       await this.getAssets(this.currentPerson);
 
       // refresh market
-      await this.getMarketForPerson(this.selectedResource.resource)
+      await this.getMarketForPerson(this.selectedResource.type)
 
     },
 
@@ -660,7 +660,7 @@ export default {
         </div>
 
         <div style="text-align:center;">
-          <InputText type="text" v-model="typingSessionKey" placeholder="Session key" style="text-align:center;" />
+          <InputText type="text" v-model="typingSessionKey" placeholder="Session key" style="text-align:center;" @keyup.enter="setSessionKey" />
         </div>
 
         <div v-if="typingSessionKey" style="text-align:center;">
@@ -816,9 +816,9 @@ export default {
 
         <div v-if="data_getAssets">
 
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.resource)" >
-            <Column field="resource" header="Resource"></Column>
-            <Column field="quantity" header="Quantity"></Column>
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.type)" >
+            <Column field="type" header="Resource"></Column>
+            <Column field="amount" header="Quantity"></Column>
           </DataTable>
 
         </div>
@@ -826,14 +826,14 @@ export default {
 
         <div v-if="selectedResource">
 
-          <p style="font-weight: bold;" class="relative text-xl text-center">{{selectedResource.resource}}</p>
+          <p style="font-weight: bold;" class="relative text-xl text-center">{{selectedResource.type}}</p>
 
             <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
 
             <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
             <div v-if="sellQuantity && sellPrice">
-              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="sell(currentPerson, selectedResource.resource, sellQuantity, sellPrice)" rounded />
+              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="sell(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
             </div>
 
             <div v-if="currentPersonSales">
@@ -916,67 +916,6 @@ export default {
 
 
     </div>
-
-
-
-
-
-
-    <!-- <div class="flexbox-container-bottom">
-      <div class="flexbox-item flexbox-item-5">
-
-        <Button type="submit" severity="success" label="Get Market" @click="getMarket('apple')" rounded />
-          <div v-if="data_getMarket">
-            <pre>    {{ data_getMarket.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-          <Button type="submit" severity="success" label="Get Price" @click="getPrice('apple', 1)" rounded />
-          <div v-if="data_getPrice">
-            <pre>    {{ data_getPrice.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-          <Button type="submit" severity="success" label="Get Assets" @click="getAssets('Phillip Geeter')" rounded />
-          <div v-if="data_getAssets">
-            <pre>    {{ data_getAssets.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-          <Button type="submit" severity="success" label="Get People" @click="getPeople" rounded />
-          <div v-if="data_getPeople">
-            <pre>    {{ data_getPeople.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-          <Button type="submit" severity="success" label="Create Person" @click="createPerson('Phillip Geeter')" rounded />
-          <div v-if="data_createPerson">
-            <pre>    {{ data_createPerson.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-          <Button type="submit" severity="success" label="Sell" @click="sell('Phillip Geeter', 'apple', 2, 8)" rounded />
-          <div v-if="data_sell">
-            <pre>    {{ data_sell.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-          <Button type="submit" severity="success" label="Buy" @click="buy('Phillip Geeter', 'apple', 2)" rounded />
-          <div v-if="data_buy">
-            <pre>    {{ data_buy.message }}</pre>
-          </div>
-          <div v-else><br></div>
-
-
-      </div>
-    </div> -->
-
 
 
 

@@ -3,8 +3,7 @@ import random
 import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import sqlite3
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
 
@@ -14,12 +13,15 @@ SELECT SUM(cash) FROM person;
 -- SELECT SUM(amount) FROM sell WHERE resource_id = 1;
 '''
 
+'''
+import sqlite3
 # Connect to the database (or create it if it doesn't exist)
 conn = sqlite3.connect('database.db', check_same_thread=False)
 
 conn.row_factory = sqlite3.Row
 # Create a cursor object to execute SQL commands
 cursor = conn.cursor()
+'''
 
 
 
@@ -90,31 +92,14 @@ def get_market(session_id, resource_type):
 
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-    command = '''SELECT name, sell.id, person_id, amount, price FROM sell
-                INNER JOIN person ON sell.person_id = person.id
-                WHERE person.session_id = %d AND resource_id = %d AND amount > 0 ORDER BY price, sell.id''' % (session_id, resource_id)
+    query = (session.query(Person.name, Sell.id, Sell.person_id, Sell.amount, Sell.price).join(Person, Sell.person_id == Person.id)
+                                       .filter(Person.session_id == session_id, Sell.resource_id == resource_id, Sell.amount > 0)
+                                       .order_by(Sell.price, Sell.id)).all()
 
-    cursor.execute(command)
-    sell_table = cursor.fetchall()
+    sell_list = [dict(x._mapping) for x in query]
 
-    return sell_table
+    return sell_list
 
-
-def get_num_products_for_sale(session_id, resource_type):
-
-    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
-
-    command = 'SELECT SUM(amount) FROM sell WHERE session_id = %d AND resource_id = %d' % (session_id, resource_id)
-    cursor.execute(command)
-    num_products = cursor.fetchall()
-    num_products = num_products[0][0]
-
-    if num_products is None:
-        num_products = 0
-
-    return num_products
-
-    
 
 
 
@@ -293,7 +278,11 @@ def get_price_toplevel(session_key, resource_type, amount=1):
 
     if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
-        num_product = get_num_products_for_sale(session_id, resource_type)
+        resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
+        # Get the number of items currently for sale for that resource
+        num_product = (session.query(func.sum(Sell.amount))
+                              .filter(Sell.session_id == session_id, Sell.resource_id == resource_id)).one()[0]
 
         if amount <= num_product:
 
@@ -327,7 +316,10 @@ def buy(session_key, name, resource_type, amount):
 
             resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-            num_product = get_num_products_for_sale(session_id, resource_type)
+            # Get the number of items currently for sale for that resource
+            num_product = (session.query(func.sum(Sell.amount))
+                                  .filter(Sell.session_id == session_id, Sell.resource_id == resource_id)).one()[0]
+
             if amount <= num_product:
 
                 price = get_price(session_id, resource_type, amount)
@@ -416,14 +408,15 @@ def get_assets(session_key, name):
 
         person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
-        command = '''SELECT type, resource_id, amount FROM person_resource 
-                        INNER JOIN resource ON person_resource.resource_id = resource.id 
-                        WHERE resource.session_id = %d AND person_id = %d ORDER BY resource.type''' % (session_id, person_id)
 
-        cursor.execute(command)
-        resource_arr = cursor.fetchall()
 
-        resource_list = [{'resource': x['type'], 'quantity': x['amount']} for x in resource_arr]
+        # Get resources from person name and sort by resource type
+        query = (session.query(Resource.type, PersonResource.amount).join(Resource, PersonResource.resource_id == Resource.id)
+                        .filter(PersonResource.session_id == session_id, PersonResource.person_id == person_id)
+                        .order_by(Resource.type)).all()
+
+        resource_list = [dict(x._mapping) for x in query]
+
 
 
         b_success = True
@@ -445,10 +438,7 @@ def get_market_toplevel(session_key, resource_type):
     sell_list = None
 
     if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-        sell_table = get_market(session_id, resource_type)
-        sell_list = [{'sell_id': x['id'], 'name': x['name'], 'amount': x['amount'], 'price': x['price']} for i, x in enumerate(sell_table)]
-
-
+        sell_list = get_market(session_id, resource_type)
 
         b_success = True
         message = 'Success (market): returned selling data for %s' % resource_type
@@ -464,11 +454,8 @@ def get_people(session_key):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    command = '''SELECT name FROM person WHERE session_id = %d''' % session_id
-    cursor.execute(command)
-    person_rows = cursor.fetchall()
-
-    person_list = [x['name'] for x in person_rows]
+    query = session.query(Person.name).filter(Person.session_id == session_id).all()
+    person_list = [x._mapping['name'] for x in query]
     
     b_success = True
     message = 'Success (people): got %d people' % len(person_list)
@@ -480,11 +467,8 @@ def get_resources(session_key):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    command = '''SELECT type FROM resource WHERE session_id = %d''' % session_id
-    cursor.execute(command)
-    resource_rows = cursor.fetchall()
-
-    resource_list = [x['type'] for x in resource_rows]
+    query = session.query(Resource.type).filter(Resource.session_id == session_id).all()
+    resource_list = [x._mapping['type'] for x in query]
     
     b_success = True
     message = 'Success (resource): got %d resources' % len(resource_list)
