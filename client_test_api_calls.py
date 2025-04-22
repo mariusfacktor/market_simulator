@@ -85,7 +85,7 @@ def examples(num_iter=1):
 
 def main():
 
-    num_iter = 200
+    num_iter = 100
 
     examples(num_iter)
 
