@@ -281,7 +281,7 @@ def get_price_toplevel(session_key, resource_type, amount=1):
         resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
         # Get the number of items currently for sale for that resource
-        num_product = (session.query(func.sum(Sell.amount))
+        num_product = (session.query(func.coalesce(func.sum(Sell.amount), 0))
                               .filter(Sell.session_id == session_id, Sell.resource_id == resource_id)).one()[0]
 
         if amount <= num_product:
@@ -317,7 +317,7 @@ def buy(session_key, name, resource_type, amount):
             resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
             # Get the number of items currently for sale for that resource
-            num_product = (session.query(func.sum(Sell.amount))
+            num_product = (session.query(func.coalesce(func.sum(Sell.amount), 0))
                                   .filter(Sell.session_id == session_id, Sell.resource_id == resource_id)).one()[0]
 
             if amount <= num_product:
