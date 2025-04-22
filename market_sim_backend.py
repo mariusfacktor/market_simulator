@@ -875,6 +875,9 @@ def api_create_session():
         return 'Method not allowed', 405
 
 
+def create_app():
+    return app
+
 
 def main():
     app.run(port=5000, debug=True)
