@@ -7,6 +7,9 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
 
+# gunicorn -w 2 "market_sim_backend:app"
+
+
 '''
 SELECT SUM(cash) FROM person;
 -- SELECT SUM(amount) FROM person_resource WHERE resource_id = 1;
@@ -875,8 +878,6 @@ def api_create_session():
         return 'Method not allowed', 405
 
 
-def create_app():
-    return app
 
 
 def main():

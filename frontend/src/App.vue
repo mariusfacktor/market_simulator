@@ -35,6 +35,9 @@ export default {
 
   data() {
     return {
+      // serverPort: 5000,
+      serverPort: 8000,
+
       data_getMarket: null,
       data_getPrice: null,
       data_getAssets: null,
@@ -106,6 +109,9 @@ export default {
 
     async getMarket(resource_type) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/get_market'
+
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
                           'resource_type': resource_type 
@@ -113,7 +119,7 @@ export default {
 
         const response = await axios({
           method: 'get',
-          url: 'http://127.0.0.1:5000/get_market',
+          url: url,
           headers: headers,
           params: params,
         });
@@ -131,6 +137,9 @@ export default {
 
     async getPrice(resource_type, amount) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/get_price'
+
         const headers = { 'Content-Type': 'application/json' };
         const params = { 'session_key': this.sessionKey,
                          'resource_type': resource_type,
@@ -138,7 +147,7 @@ export default {
 
         const response = await axios({
           method: 'get',
-          url: 'http://127.0.0.1:5000/get_price',
+          url: url,
           headers: headers,
           params: params,
         });
@@ -159,6 +168,9 @@ export default {
 
     async getAssets(name) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/get_assets'
+
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
                           'name': String(name) 
@@ -166,7 +178,7 @@ export default {
 
         const response = await axios({
           method: 'get',
-          url: 'http://127.0.0.1:5000/get_assets',
+          url: url,
           headers: headers,
           params: params,
         });
@@ -187,13 +199,16 @@ export default {
 
     async getPeople() {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/get_people'
+
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
                         };
 
         const response = await axios({
           method: 'get',
-          url: 'http://127.0.0.1:5000/get_people',
+          url: url,
           headers: headers,
           params: params,
         });
@@ -211,13 +226,16 @@ export default {
 
     async getResources() {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/get_resources'
+
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
                         };
 
         const response = await axios({
           method: 'get',
-          url: 'http://127.0.0.1:5000/get_resources',
+          url: url,
           headers: headers,
           params: params,
         });
@@ -235,6 +253,9 @@ export default {
 
     async createPerson(name) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/create_person'
+
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 'session_key': this.sessionKey,
@@ -245,7 +266,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/create_person',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -266,6 +287,9 @@ export default {
 
     async sell(name, resource_type, amount, price) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/sell'
+
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 'session_key': this.sessionKey,
@@ -276,7 +300,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/sell',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -304,6 +328,9 @@ export default {
 
     async buy(name, resource_type, amount) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/buy'
+
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 'session_key': this.sessionKey,
@@ -313,7 +340,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/buy',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -343,6 +370,9 @@ export default {
 
     async cancelSell(sell_id) {
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/cancel_sell'
+
         const headers = { 'Content-Type': 'application/json' };
 
         const body = {  'session_key': this.sessionKey,
@@ -351,7 +381,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/cancel_sell',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -465,6 +495,7 @@ export default {
           deposit_or_withdraw_str = 'withdraw';
         }
 
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/deposit_or_withdraw'
 
         const headers = { 'Content-Type': 'application/json' };
         const body = { 'session_key': this.sessionKey,
@@ -475,7 +506,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/deposit_or_withdraw',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -498,8 +529,6 @@ export default {
     async giveOrTakeResource() {
 
       try {
-        const headers = { 'Content-Type': 'application/json' };
-
 
         var deposit_or_withdraw_str = ''
         if (this.adminDepositWithdrawResource == 'Deposit') {
@@ -511,6 +540,10 @@ export default {
           deposit_or_withdraw_str = 'withdraw';
         }
 
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/give_or_take_resource'
+
+        const headers = { 'Content-Type': 'application/json' };
+
         const body = { 'session_key': this.sessionKey,
                        'name': this.currentPerson,
                        'resource_type': this.adminSelectedResource,
@@ -520,7 +553,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/give_or_take_resource',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -543,6 +576,9 @@ export default {
     async newResource(resource_type) {
 
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/new_resource'
+
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 
@@ -552,7 +588,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/new_resource',
+          url: url,
           headers: headers,
           data: body,
         });
@@ -581,6 +617,9 @@ export default {
       this.typingSessionKey = null;
 
       try {
+
+        let url = 'http://127.0.0.1:' + String(this.serverPort) + '/create_session';
+
         const headers = { 'Content-Type': 'application/json' };
 
         const body = { 'session_key': this.sessionKey,
@@ -588,7 +627,7 @@ export default {
 
         const response = await axios({
           method: 'post',
-          url: 'http://127.0.0.1:5000/create_session',
+          url: url,
           headers: headers,
           data: body,
         });

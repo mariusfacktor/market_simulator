@@ -2,7 +2,10 @@
 import requests
 import random
 
-url = 'http://127.0.0.1:5000/'
+# port = 5000
+port = 8000
+
+url = 'http://127.0.0.1:' + str(port) + '/'
 
 # random.seed(8)
 
