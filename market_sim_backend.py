@@ -484,8 +484,8 @@ def cancel_sell(session_key, sell_id):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+    person_id = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().person_id
+    resource_id = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().resource_id
     amount = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().amount
 
     # Give product back to the seller
