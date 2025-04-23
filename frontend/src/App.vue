@@ -884,7 +884,7 @@ export default {
               </DataTable>
 
               <div v-if="selectedSaleForCancel" >
-                <Button style="width: 100%;" type="submit" severity="success" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.sell_id)" rounded />
+                <Button style="width: 100%;" type="submit" severity="success" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.id)" rounded />
               </div>
 
             </div>
