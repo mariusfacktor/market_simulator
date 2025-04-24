@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
 
-# gunicorn -w 2 "market_sim_backend:app"
+# gunicorn --bind 0.0.0.0:8000 -w 2 "market_sim_backend:app"
 
 
 '''

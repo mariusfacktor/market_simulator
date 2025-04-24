@@ -5,7 +5,11 @@ import random
 # port = 5000
 port = 8000
 
-url = 'http://127.0.0.1:' + str(port) + '/'
+addr = 'http://127.0.0.1'
+# addr = 'http://34.82.55.106'
+
+url = addr + ':' + str(port) + '/'
+
 
 # random.seed(8)
 
@@ -27,8 +31,9 @@ def create_session():
     print(response.json())
 
 
-def create_person():
-    name = names[random.randint(0, len(names) - 1)]
+def create_person(name=None):
+    if not name:
+        name = names[random.randint(0, len(names) - 1)]
     cash = random.randint(100, 1000)
     resource_dict = {}
 
@@ -72,23 +77,30 @@ def buy(name):
 
 def examples(num_iter=1):
 
-    create_session()
-
     for i in range(num_iter):
 
         print('')
 
-        name = create_person()
+        name = names[random.randint(0, len(names) - 1)]
 
         sell(name)
         sell(name)
         buy(name)
 
 
+def create_all_people():
+    for name in names:
+        create_person(name)
+
+
 
 def main():
 
-    num_iter = 100
+    create_session()
+
+    create_all_people()
+
+    num_iter = 10
 
     examples(num_iter)
 
