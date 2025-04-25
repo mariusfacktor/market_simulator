@@ -706,7 +706,7 @@ export default {
         </div>
 
         <div v-if="typingSessionKey" style="text-align:center;">
-          <Button style="width: 200px;" type="submit" severity="success" label="Submit" @click="setSessionKey" rounded />
+          <Button style="width: 200px;" type="submit" severity="info" label="Submit" @click="setSessionKey" rounded />
         </div>
 
       </div>
@@ -759,7 +759,7 @@ export default {
           <InputText type="text" v-model="createdPerson" placeholder="Name" style="width: 100%;" />
 
           <div v-if="createdPerson">
-            <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="createPerson(createdPerson)" rounded />
+            <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" rounded />
           </div>
 
         </div>
@@ -794,7 +794,7 @@ export default {
               <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
             </div>
             <div v-if="adminMoney && adminDepositWithdraw">
-              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="depositOrWithdraw" rounded />
+              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" rounded />
             </div>
 
           </div>
@@ -816,7 +816,7 @@ export default {
               </div>
 
               <div v-if="adminResourceAmount && adminDepositWithdrawResource">
-                <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="giveOrTakeResource" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" rounded />
               </div>
 
             </div>
@@ -828,7 +828,7 @@ export default {
             <InputText type="text" v-model="newResourceType" placeholder="Resource type" style="width: 100%;" />
 
             <div v-if="newResourceType">
-              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="newResource(newResourceType)" rounded />
+              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" rounded />
             </div>
 
           </div>
@@ -875,7 +875,7 @@ export default {
             <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
             <div v-if="sellQuantity && sellPrice">
-              <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="sell(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
+              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="sell(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
             </div>
 
             <div v-if="currentPersonSales">
@@ -887,7 +887,7 @@ export default {
               </DataTable>
 
               <div v-if="selectedSaleForCancel" >
-                <Button style="width: 100%;" type="submit" severity="success" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.id)" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.id)" rounded />
               </div>
 
             </div>
@@ -943,7 +943,7 @@ export default {
               <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
 
               <div v-if="(money != null) && (money >= data_getPrice.data.price)">
-                <Button style="width: 100%;" type="submit" severity="success" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" rounded />
               </div>
 
             </div>
@@ -996,8 +996,8 @@ export default {
 .flexbox-item {
   width: 300px;
   margin: 8px;
-  border: 3px solid #333;
-  background-color: #dfdfdf;
+  border: 3px solid #8e9dbb;
+  background-color: #ebe6dd;
 }
 
 .flexbox-item-1 {
