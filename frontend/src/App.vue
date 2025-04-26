@@ -38,8 +38,8 @@ export default {
       // serverPort: 5000,
       serverPort: 8000,
 
-      addr: 'http://127.0.0.1',
-      // addr: 'http://34.82.55.106',
+      // addr: 'http://127.0.0.1',
+      addr: 'http://34.82.55.106',
 
       data_getMarket: null,
       data_getPrice: null,
