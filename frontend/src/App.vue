@@ -38,8 +38,9 @@ export default {
       // serverPort: 5000,
       serverPort: 8000,
 
-      // addr: 'http://127.0.0.1',
-      addr: 'http://34.82.55.106',
+      // addr: 'http://127.0.0.1' + ':' + String(this.serverPort),
+      // addr: 'http://34.82.55.106' + ':' + String(this.serverPort),
+      addr: 'https://market-sim.duckdns.org',
 
       data_getMarket: null,
       data_getPrice: null,
@@ -113,7 +114,7 @@ export default {
     async getMarket(resource_type) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/get_market'
+        let url = this.addr + '/get_market'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
@@ -141,7 +142,7 @@ export default {
     async getPrice(resource_type, amount) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/get_price'
+        let url = this.addr + '/get_price'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = { 'session_key': this.sessionKey,
@@ -172,7 +173,7 @@ export default {
     async getAssets(name) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/get_assets'
+        let url = this.addr + '/get_assets'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
@@ -203,7 +204,7 @@ export default {
     async getPeople() {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/get_people'
+        let url = this.addr + '/get_people'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
@@ -230,7 +231,7 @@ export default {
     async getResources() {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/get_resources'
+        let url = this.addr + '/get_resources'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
@@ -257,7 +258,7 @@ export default {
     async createPerson(name) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/create_person'
+        let url = this.addr + '/create_person'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -291,7 +292,7 @@ export default {
     async sell(name, resource_type, amount, price) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/sell'
+        let url = this.addr + '/sell'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -332,7 +333,7 @@ export default {
     async buy(name, resource_type, amount) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/buy'
+        let url = this.addr + '/buy'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -374,7 +375,7 @@ export default {
     async cancelSell(sell_id) {
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/cancel_sell'
+        let url = this.addr + '/cancel_sell'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -498,7 +499,7 @@ export default {
           deposit_or_withdraw_str = 'withdraw';
         }
 
-        let url = this.addr + ':' + String(this.serverPort) + '/deposit_or_withdraw'
+        let url = this.addr + '/deposit_or_withdraw'
 
         const headers = { 'Content-Type': 'application/json' };
         const body = { 'session_key': this.sessionKey,
@@ -543,7 +544,7 @@ export default {
           deposit_or_withdraw_str = 'withdraw';
         }
 
-        let url = this.addr + ':' + String(this.serverPort) + '/give_or_take_resource'
+        let url = this.addr + '/give_or_take_resource'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -580,7 +581,7 @@ export default {
 
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/new_resource'
+        let url = this.addr + '/new_resource'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -621,7 +622,7 @@ export default {
 
       try {
 
-        let url = this.addr + ':' + String(this.serverPort) + '/create_session';
+        let url = this.addr + '/create_session';
 
         const headers = { 'Content-Type': 'application/json' };
 
