@@ -95,7 +95,8 @@ def get_market(session_id, resource_type):
 
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-    query = (session.query(Person.name, Sell.id, Sell.person_id, Sell.amount, Sell.price).join(Person, Sell.person_id == Person.id)
+    query = (session.query(Person.name, Sell.id, Sell.person_id, Sell.amount, Sell.price)
+                                       .join(Person, Sell.person_id == Person.id)
                                        .filter(Person.session_id == session_id, Sell.resource_id == resource_id, Sell.amount > 0)
                                        .order_by(Sell.price, Sell.id)).all()
 
@@ -132,9 +133,11 @@ def create_person(session_key, name, cash, resource_dict):
                 session.commit()
 
             # Add resource amounts to person_resource table
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                         Resource.type == resource_type).one().id
 
-            new_person_resource = PersonResource(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=resource_amount)
+            new_person_resource = PersonResource(session_id=session_id, person_id=person_id,
+                                                 resource_id=resource_id, amount=resource_amount)
             session.add(new_person_resource)
             session.commit()
 
@@ -170,7 +173,8 @@ def give_or_take_product(session_id, person_id, resource_id, amount):
 
         previous_quantity = 0
         new_quantity = previous_quantity + amount
-        new_person_resource = PersonResource(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=new_quantity)
+        new_person_resource = PersonResource(session_id=session_id, person_id=person_id,
+                                             resource_id=resource_id, amount=new_quantity)
         session.add(new_person_resource)
         session.commit()
 
@@ -202,7 +206,8 @@ def sell(session_key, name, resource_type, amount, price):
 
         if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                         Resource.type == resource_type).one().id
 
             if session.query(PersonResource).filter(PersonResource.session_id == session_id,
                                                     PersonResource.person_id == person_id,
@@ -214,7 +219,8 @@ def sell(session_key, name, resource_type, amount, price):
 
                 if available_quantity >= amount:
 
-                    new_sell_order = Sell(session_id=session_id, person_id=person_id, resource_id=resource_id, amount=amount, price=price)
+                    new_sell_order = Sell(session_id=session_id, person_id=person_id, resource_id=resource_id,
+                                          amount=amount, price=price)
                     session.add(new_sell_order)
                     session.commit()
 
@@ -317,7 +323,8 @@ def buy(session_key, name, resource_type, amount):
 
         if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                         Resource.type == resource_type).one().id
 
             # Get the number of items currently for sale for that resource
             num_product = (session.query(func.coalesce(func.sum(Sell.amount), 0))
