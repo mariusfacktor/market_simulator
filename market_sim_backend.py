@@ -3,7 +3,7 @@ import random
 import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func, DateTime
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
 
@@ -75,6 +75,28 @@ class Sell(Base):
     amount = Column(Integer)
     price = Column(Float)
 
+class BuyHistory(Base):
+    __tablename__ = 'buy_history'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    person_id = Column(Integer, ForeignKey('person.id'))
+    resource_id = Column(Integer, ForeignKey('resource.id'))
+    amount = Column(Integer)
+    total_price = Column(Float)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+class SellHistory(Base):
+    __tablename__ = 'sell_history'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    person_id = Column(Integer, ForeignKey('person.id'))
+    resource_id = Column(Integer, ForeignKey('resource.id'))
+    amount = Column(Integer)
+    total_price = Column(Float)
+    sell_id  = Column(Integer, ForeignKey('sell.id'))
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
 
 
@@ -375,11 +397,24 @@ def buy(session_key, name, resource_type, amount):
 
                         sell_idx += 1
 
+                        # add entry to sell_history table
+                        new_sell_history = SellHistory(session_id=session_id, person_id=curr_seller, resource_id=resource_id,
+                                                       amount=used_quantity, total_price=cost, sell_id=curr_sale_id)
+                        session.add(new_sell_history)
+                        session.commit()
+
+
                     # charge buyer
                     pay_or_charge_person(session_id, person_id, -1 * running_cost)
 
                     # give items to the buyer
                     give_or_take_product(session_id, person_id, resource_id, running_quantity)
+
+                    # add entry to buy_history table
+                    new_buy_history = BuyHistory(session_id=session_id, person_id=person_id, resource_id=resource_id,
+                                                   amount=running_quantity, total_price=running_cost)
+                    session.add(new_buy_history)
+                    session.commit()
 
 
                     b_success = True

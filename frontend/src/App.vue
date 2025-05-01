@@ -35,11 +35,9 @@ export default {
 
   data() {
     return {
-      // serverPort: 5000,
-      serverPort: 8000,
 
-      // addr: 'http://127.0.0.1' + ':' + String(this.serverPort),
-      // addr: 'http://34.82.55.106' + ':' + String(this.serverPort),
+      // addr: 'http://127.0.0.1' + ':' + '8000',
+      // addr: 'http://34.82.55.106' + ':' + '8000',
       addr: 'https://market-sim.duckdns.org',
 
       data_getMarket: null,
