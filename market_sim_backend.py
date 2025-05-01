@@ -3,8 +3,10 @@ import random
 import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func
+from sqlalchemy.dialects.mysql import DATETIME
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
+from sqlalchemy_utc import utcnow
 
 
 # gunicorn --bind 0.0.0.0:8000 -w 2 "market_sim_backend:app"
@@ -84,7 +86,7 @@ class BuyHistory(Base):
     resource_id = Column(Integer, ForeignKey('resource.id'))
     amount = Column(Integer)
     total_price = Column(Float)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DATETIME(fsp=6), server_default=utcnow())
 
 class SellHistory(Base):
     __tablename__ = 'sell_history'
@@ -96,7 +98,7 @@ class SellHistory(Base):
     amount = Column(Integer)
     total_price = Column(Float)
     sell_id  = Column(Integer, ForeignKey('sell.id'))
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DATETIME(fsp=6), server_default=utcnow())
 
 
 
