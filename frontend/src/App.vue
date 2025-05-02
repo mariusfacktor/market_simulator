@@ -322,6 +322,15 @@ export default {
 
         this.data_sell = response.data;
         this.error = null;
+
+
+        // update buy market if buy is selecting the same resource just sold
+        if (this.currentResource !== null) {
+          if (resource_type == this.currentResource) {
+            await this.getMarketForBuying(this.currentResource);
+          }
+        }
+
       } catch (err) {
         this.data_sell = null;
         this.error = err.message;
