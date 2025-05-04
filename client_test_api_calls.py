@@ -52,12 +52,12 @@ def create_person(name=None):
 def sell(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
-    amount = random.randint(1, 30)
+    quantity = random.randint(1, 30)
 
     # price = random.randint(1, 15)
     price = round(0.01 + (14.99 * random.random()), 2)
 
-    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'amount': amount, 'price': price}
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
 
     response = requests.post(url + 'sell', json=data)
     print(response.json())
@@ -66,9 +66,9 @@ def sell(name):
 def buy(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
-    amount = random.randint(1, 15)
+    quantity = random.randint(1, 15)
 
-    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'amount': amount}
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
     response = requests.post(url + 'buy', json=data)
     print(response.json())
@@ -100,7 +100,7 @@ def main():
 
     create_all_people()
 
-    num_iter = 10
+    num_iter = 50
 
     examples(num_iter)
 

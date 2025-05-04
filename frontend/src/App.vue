@@ -138,7 +138,7 @@ export default {
 
     },
 
-    async getPrice(resource_type, amount) {
+    async getPrice(resource_type, quantity) {
       try {
 
         let url = this.addr + '/get_price'
@@ -146,7 +146,7 @@ export default {
         const headers = { 'Content-Type': 'application/json' };
         const params = { 'session_key': this.sessionKey,
                          'resource_type': resource_type,
-                         'amount': amount };
+                         'quantity': quantity };
 
         const response = await axios({
           method: 'get',
@@ -160,7 +160,7 @@ export default {
         this.data_getPrice = response.data;
         this.error = null;
 
-        this.pricePerUnit = this.data_getPrice.data.price / amount;
+        this.pricePerUnit = this.data_getPrice.data.price / quantity;
         this.pricePerUnit = this.pricePerUnit.toFixed(2);
 
       } catch (err) {
@@ -288,7 +288,7 @@ export default {
 
     },
 
-    async sell(name, resource_type, amount, price) {
+    async sell(name, resource_type, quantity, price) {
       try {
 
         let url = this.addr + '/sell'
@@ -298,7 +298,7 @@ export default {
         const body = { 'session_key': this.sessionKey,
                        'name': name,
                        'resource_type': resource_type,
-                       'amount': amount,
+                       'quantity': quantity,
                        'price': price };
 
         const response = await axios({
@@ -338,7 +338,7 @@ export default {
       }
     },
 
-    async buy(name, resource_type, amount) {
+    async buy(name, resource_type, quantity) {
       try {
 
         let url = this.addr + '/buy'
@@ -348,7 +348,7 @@ export default {
         const body = { 'session_key': this.sessionKey,
                        'name': name,
                        'resource_type': resource_type,
-                       'amount': amount };
+                       'quantity': quantity };
 
         const response = await axios({
           method: 'post',
@@ -474,7 +474,7 @@ export default {
       // Add up all the quantities to get total number for sale
       var num_available = 0;
       for (let i = 0; i < this.data_getMarketForBuying.data.sell_list.length; i++) {
-        num_available += this.data_getMarketForBuying.data.sell_list[i].amount;
+        num_available += this.data_getMarketForBuying.data.sell_list[i].quantity;
       }
 
       // Get first price
@@ -560,7 +560,7 @@ export default {
                        'name': this.currentPerson,
                        'resource_type': this.adminSelectedResource,
                        'option': deposit_or_withdraw_str,
-                       'amount': this.adminResourceAmount
+                       'quantity': this.adminResourceAmount
                       };
 
         const response = await axios({
@@ -869,7 +869,7 @@ export default {
 
           <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.type)" >
             <Column field="type" header="Resource"></Column>
-            <Column field="amount" header="Quantity"></Column>
+            <Column field="quantity" header="Quantity"></Column>
           </DataTable>
 
         </div>
@@ -891,7 +891,7 @@ export default {
               <p class="relative text-xl text-center">Selling</p>
 
               <DataTable selectionMode="single" v-model:selection="selectedSaleForCancel" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
-                <Column field="amount" header="Quantity"></Column>
+                <Column field="quantity" header="Quantity"></Column>
                 <Column field="price" header="Price"></Column>
               </DataTable>
 
