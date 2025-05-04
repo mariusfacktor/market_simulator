@@ -14,8 +14,8 @@ from sqlalchemy_utc import utcnow
 
 '''
 SELECT SUM(cash) FROM person;
--- SELECT SUM(amount) FROM person_resource WHERE resource_id = 1;
--- SELECT SUM(amount) FROM sell WHERE resource_id = 1;
+-- SELECT SUM(quantity) FROM person_resource WHERE resource_id = 1;
+-- SELECT SUM(quantity) FROM sell WHERE resource_id = 1;
 '''
 
 '''
@@ -65,7 +65,7 @@ class PersonResource(Base):
     session_id = Column(Integer, ForeignKey('session.id'))
     person_id = Column(Integer, ForeignKey('person.id'))
     resource_id = Column(Integer, ForeignKey('resource.id'))
-    amount = Column(Integer)
+    quantity = Column(Integer)
 
 class SellOrder(Base):
     __tablename__ = 'sell_order'
@@ -74,8 +74,18 @@ class SellOrder(Base):
     session_id = Column(Integer, ForeignKey('session.id'))
     person_id = Column(Integer, ForeignKey('person.id'))
     resource_id = Column(Integer, ForeignKey('resource.id'))
-    amount = Column(Integer)
+    quantity = Column(Integer)
     price = Column(Float)
+
+# class BuyOrder(Base):
+#     __tablename__ = 'buy_order'
+
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     session_id = Column(Integer, ForeignKey('session.id'))
+#     person_id = Column(Integer, ForeignKey('person.id'))
+#     resource_id = Column(Integer, ForeignKey('resource.id'))
+#     quantity = Column(Integer)
+#     price = Column(Float)
 
 class BuyHistory(Base):
     __tablename__ = 'buy_history'
@@ -84,7 +94,7 @@ class BuyHistory(Base):
     session_id = Column(Integer, ForeignKey('session.id'))
     person_id = Column(Integer, ForeignKey('person.id'))
     resource_id = Column(Integer, ForeignKey('resource.id'))
-    amount = Column(Integer)
+    quantity = Column(Integer)
     total_price = Column(Float)
     timestamp = Column(DATETIME(fsp=6), server_default=utcnow())
 
@@ -95,7 +105,7 @@ class SellHistory(Base):
     session_id = Column(Integer, ForeignKey('session.id'))
     person_id = Column(Integer, ForeignKey('person.id'))
     resource_id = Column(Integer, ForeignKey('resource.id'))
-    amount = Column(Integer)
+    quantity = Column(Integer)
     total_price = Column(Float)
     sell_id  = Column(Integer, ForeignKey('sell_order.id'))
     timestamp = Column(DATETIME(fsp=6), server_default=utcnow())
@@ -119,9 +129,9 @@ def get_market(session_id, resource_type):
 
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.amount, SellOrder.price)
+    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.price)
                                        .join(Person, SellOrder.person_id == Person.id)
-                                       .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.amount > 0)
+                                       .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.quantity > 0)
                                        .order_by(SellOrder.price, SellOrder.id)).all()
 
     sell_list = [dict(x._mapping) for x in query]
@@ -148,7 +158,7 @@ def create_person(session_key, name, cash, resource_dict):
         person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
         # Add new resources to resource table
-        for resource_type, resource_amount in resource_dict.items():
+        for resource_type, resource_quantity in resource_dict.items():
             # Check if that resource type is already in the resource table
             if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
                 # add type to resource table
@@ -156,12 +166,12 @@ def create_person(session_key, name, cash, resource_dict):
                 session.add(new_resource)
                 session.commit()
 
-            # Add resource amounts to person_resource table
+            # Add resource quantities to person_resource table
             resource_id = session.query(Resource).filter(Resource.session_id == session_id,
                                                          Resource.type == resource_type).one().id
 
             new_person_resource = PersonResource(session_id=session_id, person_id=person_id,
-                                                 resource_id=resource_id, amount=resource_amount)
+                                                 resource_id=resource_id, quantity=resource_quantity)
             session.add(new_person_resource)
             session.commit()
 
@@ -174,9 +184,9 @@ def create_person(session_key, name, cash, resource_dict):
     return b_success, message
 
 
-def give_or_take_product(session_id, person_id, resource_id, amount):
-    # amount > 0: give
-    # amount < 0: take
+def give_or_take_product(session_id, person_id, resource_id, quantity):
+    # quantity > 0: give
+    # quantity < 0: take
 
     if session.query(PersonResource).filter(PersonResource.session_id == session_id,
                                             PersonResource.person_id == person_id,
@@ -184,21 +194,21 @@ def give_or_take_product(session_id, person_id, resource_id, amount):
 
         previous_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
                                                                  PersonResource.person_id == person_id, 
-                                                                 PersonResource.resource_id == resource_id).one().amount
-        new_quantity = previous_quantity + amount
+                                                                 PersonResource.resource_id == resource_id).one().quantity
+        new_quantity = previous_quantity + quantity
 
         obj = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
                                                    PersonResource.person_id == person_id,
                                                    PersonResource.resource_id == resource_id).one()
-        obj.amount = new_quantity
+        obj.quantity = new_quantity
         session.commit()
 
     else:
 
         previous_quantity = 0
-        new_quantity = previous_quantity + amount
+        new_quantity = previous_quantity + quantity
         new_person_resource = PersonResource(session_id=session_id, person_id=person_id,
-                                             resource_id=resource_id, amount=new_quantity)
+                                             resource_id=resource_id, quantity=new_quantity)
         session.add(new_person_resource)
         session.commit()
 
@@ -218,7 +228,7 @@ def pay_or_charge_person(session_id, person_id, dollars):
 
 
 
-def sell(session_key, name, resource_type, amount, price):
+def sell(session_key, name, resource_type, quantity, price):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -239,21 +249,21 @@ def sell(session_key, name, resource_type, amount, price):
 
                 available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
                                                                           PersonResource.person_id == person_id, 
-                                                                          PersonResource.resource_id == resource_id).one().amount
+                                                                          PersonResource.resource_id == resource_id).one().quantity
 
-                if available_quantity >= amount:
+                if available_quantity >= quantity:
 
                     new_sell_order = SellOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
-                                          amount=amount, price=price)
+                                          quantity=quantity, price=price)
                     session.add(new_sell_order)
                     session.commit()
 
 
                     # Take product from the seller
-                    give_or_take_product(session_id, person_id, resource_id, -1 * amount)
+                    give_or_take_product(session_id, person_id, resource_id, -1 * quantity)
 
                     b_success = True
-                    message = 'Success (sale): %s sells %d %s for price %.2f' % (name, amount, resource_type, price)
+                    message = 'Success (sale): %s sells %d %s for price %.2f' % (name, quantity, resource_type, price)
                 else:
                     b_success = False
                     message = 'Failure (sale): not enough %s' % resource_type
@@ -272,7 +282,7 @@ def sell(session_key, name, resource_type, amount, price):
     return b_success, message
 
 
-def get_price(session_id, resource_type, amount):
+def get_price(session_id, resource_type, desired_quantity):
 
     market = get_market(session_id, resource_type)
 
@@ -280,29 +290,26 @@ def get_price(session_id, resource_type, amount):
     running_cost = 0
 
     market_idx = 0
-    while running_quantity < amount:
+    while running_quantity < desired_quantity:
 
-        curr_quantity = market[market_idx]['amount']
+        curr_quantity = market[market_idx]['quantity']
         curr_price = market[market_idx]['price']
 
-        if curr_quantity + running_quantity <= amount:
-            running_quantity += curr_quantity
-            running_cost += curr_price * curr_quantity
+        if curr_quantity + running_quantity <= desired_quantity:
+            used_quantity = curr_quantity
         else:
-            quantity = amount - running_quantity
-            running_quantity += quantity
-            running_cost += curr_price * quantity
+            used_quantity = desired_quantity - running_quantity
+
+        running_quantity += used_quantity
+        running_cost += curr_price * used_quantity
 
         market_idx += 1
 
-
-    price = running_cost
-
-    return price
+    return running_cost
 
 
 
-def get_price_toplevel(session_key, resource_type, amount=1):
+def get_price_toplevel(session_key, resource_type, desired_quantity=1):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -314,15 +321,15 @@ def get_price_toplevel(session_key, resource_type, amount=1):
         resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
         # Get the number of items currently for sale for that resource
-        num_product = (session.query(func.coalesce(func.sum(SellOrder.amount), 0))
+        num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity), 0))
                               .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
-        if amount <= num_product:
+        if desired_quantity <= num_product:
 
-            price = get_price(session_id, resource_type, amount)
+            price = get_price(session_id, resource_type, desired_quantity)
 
             b_success = True
-            message = 'Success (price): price for %d %s is %.2f' % (amount, resource_type, price)
+            message = 'Success (price): price for %d %s is %.2f' % (desired_quantity, resource_type, price)
 
         else:
             b_success = False
@@ -335,7 +342,7 @@ def get_price_toplevel(session_key, resource_type, amount=1):
     return b_success, message, price
 
 
-def buy(session_key, name, resource_type, amount):
+def buy(session_key, name, resource_type, quantity):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -351,12 +358,12 @@ def buy(session_key, name, resource_type, amount):
                                                          Resource.type == resource_type).one().id
 
             # Get the number of items currently for sale for that resource
-            num_product = (session.query(func.coalesce(func.sum(SellOrder.amount), 0))
+            num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity), 0))
                                   .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
-            if amount <= num_product:
+            if quantity <= num_product:
 
-                price = get_price(session_id, resource_type, amount)
+                price = get_price(session_id, resource_type, quantity)
                 buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
 
                 if buyer_cash >= price:
@@ -368,30 +375,29 @@ def buy(session_key, name, resource_type, amount):
                     running_cost = 0
 
                     sell_idx = 0
-                    while running_quantity < amount:
+                    while running_quantity < quantity:
 
-                        curr_quantity = market[sell_idx]['amount']
+                        curr_quantity = market[sell_idx]['quantity']
                         curr_price = market[sell_idx]['price']
                         curr_seller = market[sell_idx]['person_id']
                         curr_sale_id = market[sell_idx]['id']
 
-                        if curr_quantity + running_quantity <= amount:
+                        if curr_quantity + running_quantity <= quantity:
                             used_quantity = curr_quantity
-                            cost = curr_price * used_quantity
-                            running_quantity += used_quantity
-                            running_cost += cost
                         else:
-                            used_quantity = amount - running_quantity
-                            cost = curr_price * used_quantity
-                            running_quantity += used_quantity
-                            running_cost += cost
+                            used_quantity = quantity - running_quantity
+
+                        cost = curr_price * used_quantity
+                        running_quantity += used_quantity
+                        running_cost += cost
+
 
                         # buy from curr_seller
                         # subtract quantity bought from seller
                         updated_quantity = curr_quantity - used_quantity
 
                         obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == curr_sale_id).one()
-                        obj.amount = updated_quantity
+                        obj.quantity = updated_quantity
                         session.commit()
 
                         # pay seller
@@ -401,7 +407,7 @@ def buy(session_key, name, resource_type, amount):
 
                         # add entry to sell_history table
                         new_sell_history = SellHistory(session_id=session_id, person_id=curr_seller, resource_id=resource_id,
-                                                       amount=used_quantity, total_price=cost, sell_id=curr_sale_id)
+                                                       quantity=used_quantity, total_price=cost, sell_id=curr_sale_id)
                         session.add(new_sell_history)
                         session.commit()
 
@@ -414,13 +420,13 @@ def buy(session_key, name, resource_type, amount):
 
                     # add entry to buy_history table
                     new_buy_history = BuyHistory(session_id=session_id, person_id=person_id, resource_id=resource_id,
-                                                   amount=running_quantity, total_price=running_cost)
+                                                 quantity=running_quantity, total_price=running_cost)
                     session.add(new_buy_history)
                     session.commit()
 
 
                     b_success = True
-                    message = 'Success (buy): %s buys %d %s for cost %.2f' % (name, amount, resource_type, running_cost)
+                    message = 'Success (buy): %s buys %d %s for cost %.2f' % (name, quantity, resource_type, running_cost)
 
                 else:
                     b_success = False
@@ -458,7 +464,7 @@ def get_assets(session_key, name):
 
 
         # Get resources from person name and sort by resource type
-        query = (session.query(Resource.type, PersonResource.amount).join(Resource, PersonResource.resource_id == Resource.id)
+        query = (session.query(Resource.type, PersonResource.quantity).join(Resource, PersonResource.resource_id == Resource.id)
                         .filter(PersonResource.session_id == session_id, PersonResource.person_id == person_id)
                         .order_by(Resource.type)).all()
 
@@ -530,14 +536,14 @@ def cancel_sell(session_key, sell_id):
 
     person_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().person_id
     resource_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().resource_id
-    amount = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().amount
+    quantity = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().quantity
 
     # Give product back to the seller
-    give_or_take_product(session_id, person_id, resource_id, amount)
+    give_or_take_product(session_id, person_id, resource_id, quantity)
 
-    # Set amount to zero in sale row
+    # Set quantity to zero in sale row
     obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one()
-    obj.amount = 0
+    obj.quantity = 0
     session.commit()
 
     b_success = True
@@ -571,7 +577,7 @@ def deposit_or_withdraw(session_key, name, option, dollars):
 
 
 
-def give_or_take_resource(session_key, name, resource_type, option, amount):
+def give_or_take_resource(session_key, name, resource_type, option, quantity):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
     person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
@@ -579,21 +585,21 @@ def give_or_take_resource(session_key, name, resource_type, option, amount):
 
     if option == 'withdraw':
 
-        resource_amount = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
-                                                               PersonResource.person_id == person_id, 
-                                                               PersonResource.resource_id == resource_id).one().amount
+        available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                                  PersonResource.person_id == person_id, 
+                                                                  PersonResource.resource_id == resource_id).one().quantity
 
-        if resource_amount < amount:
+        if available_quantity < quantity:
             b_success = False
-            message = 'Failure (give): %s has not enough %s to withdraw %d' %(name, resource_type, amount)
+            message = 'Failure (give): %s has not enough %s to withdraw %d' %(name, resource_type, quantity)
             return b_success, message
 
-        amount = -1 * amount
+        quantity = -1 * quantity
 
-    give_or_take_product(session_id, person_id, resource_id, amount)
+    give_or_take_product(session_id, person_id, resource_id, quantity)
 
     b_success = True
-    message = 'Success (give): %s %d %s with account %s' %(option, amount, resource_type, name)
+    message = 'Success (give): %s %d %s with account %s' %(option, quantity, resource_type, name)
 
     return b_success, message
 
@@ -673,10 +679,10 @@ def api_sell():
         session_key = data['session_key']
         name = data['name']
         resource_type = data['resource_type']
-        amount = data['amount']
+        quantity = data['quantity']
         price = data['price']
 
-        b_success, message = sell(session_key, name, resource_type, amount, price)
+        b_success, message = sell(session_key, name, resource_type, quantity, price)
 
         return_data = {
                         'name': name
@@ -697,9 +703,9 @@ def api_buy():
         session_key = data['session_key']
         name = data['name']
         resource_type = data['resource_type']
-        amount = data['amount']
+        quantity = data['quantity']
 
-        b_success, message = buy(session_key, name, resource_type, amount)
+        b_success, message = buy(session_key, name, resource_type, quantity)
 
         return_data = {
                         'name': name
@@ -715,14 +721,14 @@ def api_buy():
 def api_get_price():
     if request.method == 'GET':
 
-        amount = 1
+        quantity = 1
 
         session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
-        if 'amount' in request.args:
-            amount = int(request.args.get('amount'))
+        if 'quantity' in request.args:
+            quantity = int(request.args.get('quantity'))
 
-        b_success, message, price = get_price_toplevel(session_key, resource_type, amount)
+        b_success, message, price = get_price_toplevel(session_key, resource_type, quantity)
 
         return_data = {
                         'resource_type': resource_type,
@@ -869,9 +875,9 @@ def api_give_or_take_resource():
         name = data['name']
         resource_type = data['resource_type']
         option = data['option']
-        amount = data['amount']
+        quantity = data['quantity']
 
-        b_success, message = give_or_take_resource(session_key, name, resource_type, option, amount)
+        b_success, message = give_or_take_resource(session_key, name, resource_type, option, quantity)
 
         return_data = {
                         'name': name
