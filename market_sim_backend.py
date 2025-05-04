@@ -67,8 +67,8 @@ class PersonResource(Base):
     resource_id = Column(Integer, ForeignKey('resource.id'))
     amount = Column(Integer)
 
-class Sell(Base):
-    __tablename__ = 'sell'
+class SellOrder(Base):
+    __tablename__ = 'sell_order'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(Integer, ForeignKey('session.id'))
@@ -97,7 +97,7 @@ class SellHistory(Base):
     resource_id = Column(Integer, ForeignKey('resource.id'))
     amount = Column(Integer)
     total_price = Column(Float)
-    sell_id  = Column(Integer, ForeignKey('sell.id'))
+    sell_id  = Column(Integer, ForeignKey('sell_order.id'))
     timestamp = Column(DATETIME(fsp=6), server_default=utcnow())
 
 
@@ -119,10 +119,10 @@ def get_market(session_id, resource_type):
 
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-    query = (session.query(Person.name, Sell.id, Sell.person_id, Sell.amount, Sell.price)
-                                       .join(Person, Sell.person_id == Person.id)
-                                       .filter(Person.session_id == session_id, Sell.resource_id == resource_id, Sell.amount > 0)
-                                       .order_by(Sell.price, Sell.id)).all()
+    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.amount, SellOrder.price)
+                                       .join(Person, SellOrder.person_id == Person.id)
+                                       .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.amount > 0)
+                                       .order_by(SellOrder.price, SellOrder.id)).all()
 
     sell_list = [dict(x._mapping) for x in query]
 
@@ -243,7 +243,7 @@ def sell(session_key, name, resource_type, amount, price):
 
                 if available_quantity >= amount:
 
-                    new_sell_order = Sell(session_id=session_id, person_id=person_id, resource_id=resource_id,
+                    new_sell_order = SellOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
                                           amount=amount, price=price)
                     session.add(new_sell_order)
                     session.commit()
@@ -314,8 +314,8 @@ def get_price_toplevel(session_key, resource_type, amount=1):
         resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
         # Get the number of items currently for sale for that resource
-        num_product = (session.query(func.coalesce(func.sum(Sell.amount), 0))
-                              .filter(Sell.session_id == session_id, Sell.resource_id == resource_id)).one()[0]
+        num_product = (session.query(func.coalesce(func.sum(SellOrder.amount), 0))
+                              .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
         if amount <= num_product:
 
@@ -351,8 +351,8 @@ def buy(session_key, name, resource_type, amount):
                                                          Resource.type == resource_type).one().id
 
             # Get the number of items currently for sale for that resource
-            num_product = (session.query(func.coalesce(func.sum(Sell.amount), 0))
-                                  .filter(Sell.session_id == session_id, Sell.resource_id == resource_id)).one()[0]
+            num_product = (session.query(func.coalesce(func.sum(SellOrder.amount), 0))
+                                  .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
             if amount <= num_product:
 
@@ -390,7 +390,7 @@ def buy(session_key, name, resource_type, amount):
                         # subtract quantity bought from seller
                         updated_quantity = curr_quantity - used_quantity
 
-                        obj = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == curr_sale_id).one()
+                        obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == curr_sale_id).one()
                         obj.amount = updated_quantity
                         session.commit()
 
@@ -528,15 +528,15 @@ def cancel_sell(session_key, sell_id):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    person_id = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().person_id
-    resource_id = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().resource_id
-    amount = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one().amount
+    person_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().person_id
+    resource_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().resource_id
+    amount = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().amount
 
     # Give product back to the seller
     give_or_take_product(session_id, person_id, resource_id, amount)
 
     # Set amount to zero in sale row
-    obj = session.query(Sell).filter(Sell.session_id == session_id, Sell.id == sell_id).one()
+    obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one()
     obj.amount = 0
     session.commit()
 
