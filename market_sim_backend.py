@@ -75,7 +75,7 @@ class SellOrder(Base):
     person_id = Column(Integer, ForeignKey('person.id'))
     resource_id = Column(Integer, ForeignKey('resource.id'))
     quantity = Column(Integer)
-    quantity_avaialable = Column(Integer)
+    quantity_available = Column(Integer)
     price = Column(Float)
 
 # class BuyOrder(Base):
@@ -131,9 +131,9 @@ def get_market(session_id, resource_type):
 
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_avaialable, SellOrder.price)
+    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
                     .join(Person, SellOrder.person_id == Person.id)
-                    .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.quantity_avaialable > 0)
+                    .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.quantity > 0)
                     .order_by(SellOrder.price, SellOrder.id)).all()
 
     sell_list = [dict(x._mapping) for x in query]
@@ -186,6 +186,35 @@ def create_person(session_key, name, cash, resource_dict):
     return b_success, message
 
 
+
+def calculate_quantity_available(session_id, person_id, resource_id):
+
+    # Check if person has resource
+    if session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                            PersonResource.person_id == person_id,
+                                            PersonResource.resource_id == resource_id).all():
+
+        quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                                        PersonResource.person_id == person_id,
+                                                        PersonResource.resource_id == resource_id).one().quantity
+    else:
+        quantity = 0
+
+
+    # Update quantity available for each sell_order ordered by price (low to high)
+    query = session.query(SellOrder).filter(SellOrder.session_id == session_id,
+                                            SellOrder.person_id == person_id,
+                                            SellOrder.resource_id == resource_id).order_by(SellOrder.price, SellOrder.id).all()
+
+    remaining_quantity = quantity
+
+    for obj in query:
+        obj.quantity_available = min(obj.quantity, remaining_quantity)
+        remaining_quantity = max(remaining_quantity - obj.quantity, 0)
+    session.commit()
+
+
+
 def give_or_take_product(session_id, person_id, resource_id, quantity):
     # quantity > 0: give
     # quantity < 0: take
@@ -215,14 +244,7 @@ def give_or_take_product(session_id, person_id, resource_id, quantity):
         session.commit()
 
 
-    # Check if sell_order exists for (session_id, person_id, resource_id), and if so, update quantity_available to no more than quantity
-    query = session.query(SellOrder).filter(SellOrder.session_id == session_id,
-                                            SellOrder.person_id == person_id,
-                                            SellOrder.resource_id == resource_id).all()
-
-    for obj in query:
-        obj.quantity_avaialable = min(obj.quantity, new_quantity)
-    session.commit()
+    calculate_quantity_available(session_id, person_id, resource_id)
 
 
 
@@ -260,17 +282,15 @@ def sell_order(session_key, name, resource_type, quantity, price):
                                                     PersonResource.person_id == person_id,
                                                     PersonResource.resource_id == resource_id).all():
 
-                quantity_avaialable = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
-                                                                          PersonResource.person_id == person_id, 
-                                                                          PersonResource.resource_id == resource_id).one().quantity
-
-                # quantity_avaialable contains how much the person actually has to sell capped at how much they want to sell
-                quantity_avaialable = min(quantity_avaialable, quantity)
 
                 new_sell_order = SellOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
-                                           quantity=quantity, quantity_avaialable=quantity_avaialable, price=price)
+                                           quantity=quantity, quantity_available=0, price=price)
                 session.add(new_sell_order)
                 session.commit()
+
+                # Calculate quantity_available for each sell_order ordered by price (low to high)
+                calculate_quantity_available(session_id, person_id, resource_id)
+
 
                 b_success = True
                 message = 'Success (sale): %s sells %d %s for price %.2f' % (name, quantity, resource_type, price)
@@ -300,7 +320,7 @@ def get_price(session_id, resource_type, desired_quantity):
     market_idx = 0
     while running_quantity < desired_quantity:
 
-        curr_quantity = market[market_idx]['quantity_avaialable']
+        curr_quantity = market[market_idx]['quantity_available']
         curr_price = market[market_idx]['price']
 
         if curr_quantity + running_quantity <= desired_quantity:
@@ -329,7 +349,7 @@ def get_price_toplevel(session_key, resource_type, desired_quantity=1):
         resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
         # Get the number of items currently for sale for that resource
-        num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity), 0))
+        num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
                               .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
         if desired_quantity <= num_product:
@@ -366,7 +386,7 @@ def buy(session_key, name, resource_type, quantity):
                                                          Resource.type == resource_type).one().id
 
             # Get the number of items currently for sale for that resource
-            num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_avaialable), 0))
+            num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
                                   .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
             if quantity <= num_product:
@@ -386,7 +406,7 @@ def buy(session_key, name, resource_type, quantity):
                     while running_quantity < quantity:
 
                         curr_quantity = market[sell_idx]['quantity']
-                        curr_quantity_available = market[sell_idx]['quantity_avaialable']
+                        curr_quantity_available = market[sell_idx]['quantity_available']
                         curr_price = market[sell_idx]['price']
                         curr_seller = market[sell_idx]['person_id']
                         curr_sale_id = market[sell_idx]['id']
@@ -555,7 +575,7 @@ def cancel_sell_order(session_key, sell_id):
     # Set quantity to zero in sale row
     obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one()
     obj.quantity = 0
-    obj.quantity_avaialable = 0
+    obj.quantity_available = 0
     session.commit()
 
     b_success = True

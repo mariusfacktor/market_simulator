@@ -474,7 +474,7 @@ export default {
       // Add up all the quantities to get total number for sale
       var num_available = 0;
       for (let i = 0; i < this.data_getMarketForBuying.data.sell_list.length; i++) {
-        num_available += this.data_getMarketForBuying.data.sell_list[i].quantity;
+        num_available += this.data_getMarketForBuying.data.sell_list[i].quantity_available;
       }
 
       // Get first price
