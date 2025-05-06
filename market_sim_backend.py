@@ -578,6 +578,9 @@ def cancel_sell_order(session_key, sell_id):
     obj.quantity_available = 0
     session.commit()
 
+    # Calculate quantity_available for each sell_order ordered by price (low to high)
+    calculate_quantity_available(session_id, person_id, resource_id)
+
     b_success = True
     message = 'SUCCESS (cancel): sale %d canceled' % sell_id
 
