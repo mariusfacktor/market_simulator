@@ -288,10 +288,10 @@ export default {
 
     },
 
-    async sell(name, resource_type, quantity, price) {
+    async sell_order(name, resource_type, quantity, price) {
       try {
 
-        let url = this.addr + '/sell'
+        let url = this.addr + '/sell_order'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -380,10 +380,10 @@ export default {
     },
 
 
-    async cancelSell(sell_id) {
+    async cancelSellOrder(sell_id) {
       try {
 
-        let url = this.addr + '/cancel_sell'
+        let url = this.addr + '/cancel_sell_order'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -884,7 +884,7 @@ export default {
             <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
             <div v-if="sellQuantity && sellPrice">
-              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="sell(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
+              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="sell_order(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
             </div>
 
             <div v-if="currentPersonSales">
@@ -896,7 +896,7 @@ export default {
               </DataTable>
 
               <div v-if="selectedSaleForCancel" >
-                <Button style="width: 100%;" type="submit" severity="info" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.id)" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Cancel listing" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
               </div>
 
             </div>

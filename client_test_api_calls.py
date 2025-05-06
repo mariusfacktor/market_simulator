@@ -49,7 +49,7 @@ def create_person(name=None):
     return name
 
 
-def sell(name):
+def sell_order(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
     quantity = random.randint(1, 30)
@@ -59,7 +59,7 @@ def sell(name):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
 
-    response = requests.post(url + 'sell', json=data)
+    response = requests.post(url + 'sell_order', json=data)
     print(response.json())
 
 
@@ -83,8 +83,8 @@ def examples(num_iter=1):
 
         name = names[random.randint(0, len(names) - 1)]
 
-        sell(name)
-        sell(name)
+        sell_order(name)
+        sell_order(name)
         buy(name)
 
 

@@ -75,6 +75,7 @@ class SellOrder(Base):
     person_id = Column(Integer, ForeignKey('person.id'))
     resource_id = Column(Integer, ForeignKey('resource.id'))
     quantity = Column(Integer)
+    # quantity_avaialable = Column(Integer)
     price = Column(Float)
 
 # class BuyOrder(Base):
@@ -128,6 +129,7 @@ def get_market(session_id, resource_type):
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
 
+    # TODO: return SellOrder.quantity_available
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
     query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.price)
                                        .join(Person, SellOrder.person_id == Person.id)
@@ -188,6 +190,9 @@ def give_or_take_product(session_id, person_id, resource_id, quantity):
     # quantity > 0: give
     # quantity < 0: take
 
+    # TODO: see if sell_order exists for (session_id, person_id, resource_id), and if so, update quantity_available
+    # to no more than quantity
+
     if session.query(PersonResource).filter(PersonResource.session_id == session_id,
                                             PersonResource.person_id == person_id,
                                             PersonResource.resource_id == resource_id).all():
@@ -228,7 +233,7 @@ def pay_or_charge_person(session_id, person_id, dollars):
 
 
 
-def sell(session_key, name, resource_type, quantity, price):
+def sell_order(session_key, name, resource_type, quantity, price):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -292,6 +297,7 @@ def get_price(session_id, resource_type, desired_quantity):
     market_idx = 0
     while running_quantity < desired_quantity:
 
+        # TODO: use quantity_available in the sell_order instead of quantity
         curr_quantity = market[market_idx]['quantity']
         curr_price = market[market_idx]['price']
 
@@ -357,6 +363,7 @@ def buy(session_key, name, resource_type, quantity):
             resource_id = session.query(Resource).filter(Resource.session_id == session_id,
                                                          Resource.type == resource_type).one().id
 
+            # TODO: check quantity_available in the sell_order instead of quantity
             # Get the number of items currently for sale for that resource
             num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity), 0))
                                   .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
@@ -392,13 +399,19 @@ def buy(session_key, name, resource_type, quantity):
                         running_cost += cost
 
 
+                        # TODO: remove
                         # buy from curr_seller
-                        # subtract quantity bought from seller
+                        # subtract quantity bought from sell order
                         updated_quantity = curr_quantity - used_quantity
 
                         obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == curr_sale_id).one()
                         obj.quantity = updated_quantity
                         session.commit()
+
+
+                        # TODO: add
+                        # take items from the seller
+                        # give_or_take_product(session_id, curr_seller, resource_id, -1 * used_quantity)
 
                         # pay seller
                         pay_or_charge_person(session_id, curr_seller, cost)
@@ -530,7 +543,7 @@ def get_resources(session_key):
 
 
 
-def cancel_sell(session_key, sell_id):
+def cancel_sell_order(session_key, sell_id):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -538,6 +551,7 @@ def cancel_sell(session_key, sell_id):
     resource_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().resource_id
     quantity = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().quantity
 
+    # TODO: Remove
     # Give product back to the seller
     give_or_take_product(session_id, person_id, resource_id, quantity)
 
@@ -671,8 +685,8 @@ def api_create_person():
 
 
 
-@app.route('/sell', methods=['POST'])
-def api_sell():
+@app.route('/sell_order', methods=['POST'])
+def api_sell_order():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
@@ -682,7 +696,7 @@ def api_sell():
         quantity = data['quantity']
         price = data['price']
 
-        b_success, message = sell(session_key, name, resource_type, quantity, price)
+        b_success, message = sell_order(session_key, name, resource_type, quantity, price)
 
         return_data = {
                         'name': name
@@ -822,8 +836,8 @@ def api_get_resources():
         return 'Method not allowed', 405
 
 
-@app.route('/cancel_sell', methods=['POST'])
-def api_cancel_sale():
+@app.route('/cancel_sell_order', methods=['POST'])
+def api_cancel_sell_order():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
@@ -831,7 +845,7 @@ def api_cancel_sale():
         sell_id = data['sell_id']
 
 
-        b_success, message = cancel_sell(session_key, sell_id)
+        b_success, message = cancel_sell_order(session_key, sell_id)
 
 
         return_data = {
