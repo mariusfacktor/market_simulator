@@ -1,5 +1,9 @@
 
 import requests
+import sqlite3
+
+
+# Instructions: Delete database.db before running tests
 
 # port = 5000
 port = 8000
@@ -16,6 +20,8 @@ nameB = 'Hank Tomford'
 resources = ['apple', 'orange']
 
 session_key = 'example'
+
+cursor = None
 
 
 def create_session():
@@ -52,8 +58,20 @@ def buy(name, resource_type, quantity):
 
 
 
+def connect_to_db():
 
-def main():
+    global cursor
+
+    # Connect to the database (or create it if it doesn't exist)
+    conn = sqlite3.connect('database.db', check_same_thread=False)
+
+    conn.row_factory = sqlite3.Row
+    # Create a cursor object to execute SQL commands
+    cursor = conn.cursor()
+
+
+
+def test_A():
 
     create_session()
     create_person(nameA, 100, resource_dict={'apple': 10})
@@ -62,6 +80,114 @@ def main():
     sell_order(nameA, 'apple', 6, 3)
 
     buy(nameB, 'apple', 2)
+
+
+def check_A1():
+
+    query = cursor.execute('''SELECT cash FROM person WHERE session_id = 1 AND name = "%s" ''' % nameA)
+    cash = query.fetchall()[0][0]
+    assert cash == 106, '%s must have $112' % nameA
+
+
+    query = cursor.execute('''SELECT cash FROM person WHERE session_id = 1 AND name = "%s" ''' % nameB)
+    cash = query.fetchall()[0][0]
+    assert cash == 94, '%s must have $94' % nameB
+
+
+
+
+def check_A2():
+
+    query = cursor.execute('''SELECT quantity FROM person_resource 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 8, '%s must have 8 apples' % nameA
+
+
+    query = cursor.execute('''SELECT quantity FROM person_resource 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 2, '%s must have 2 apples' % nameB
+
+
+    query = cursor.execute('''SELECT quantity FROM person_resource 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 2 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 10, '%s must have 10 oranges' % nameB
+
+
+
+
+def check_A3():
+
+    query = cursor.execute('''SELECT quantity FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 10, '%s must be selling 10 apples' % nameA
+
+
+    query = cursor.execute('''SELECT quantity_available FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 1 ''')
+    quantity_available = query.fetchall()[0][0]
+    assert quantity_available == 4, '%s must have 4 apples available in this sell_order' % nameA
+
+
+    query = cursor.execute('''SELECT quantity FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 2''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 4, '%s must be selling 4 apples' % nameA
+
+
+    query = cursor.execute('''SELECT quantity_available FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 2 ''')
+    quantity_available = query.fetchall()[0][0]
+    assert quantity_available == 4, '%s must have 4 apples available in this sell_order' % nameA
+
+
+
+def check_A4():
+
+    query = cursor.execute('''SELECT quantity FROM sell_history 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND sell_id = 2 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 2, '%s must have sold 2 apples' % nameA
+
+
+    query = cursor.execute('''SELECT total_price FROM sell_history 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND sell_id = 2 ''')
+    total_price = query.fetchall()[0][0]
+    assert total_price == 6, '%s must have been paid $6' % nameA
+
+
+
+def check_A5():
+
+    query = cursor.execute('''SELECT quantity FROM buy_history 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 2, '%s must have bought 2 apples' % nameB
+
+
+    query = cursor.execute('''SELECT total_price FROM buy_history 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 1 ''')
+    total_price = query.fetchall()[0][0]
+    assert total_price == 6, '%s must have paid $6' % nameB
+
+
+
+
+def main():
+
+
+    connect_to_db()
+
+    test_A()
+    check_A1()
+    check_A2()
+    check_A3()
+    check_A4()
+    check_A5()
+
 
 
 
