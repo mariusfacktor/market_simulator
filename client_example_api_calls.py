@@ -49,11 +49,27 @@ def sell_order(name, resource_type, quantity, price):
     print(response.json())
 
 
+def buy_order(name, resource_type, quantity, price):
+
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
+
+    response = requests.post(url + 'buy_order', json=data)
+    print(response.json())
+
+
 def buy(name, resource_type, quantity):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
     response = requests.post(url + 'buy', json=data)
+    print(response.json())
+
+
+def deposit_or_withdraw(name, dollars, option='deposit'):
+
+    data = {'session_key': session_key, 'name': name, 'option': option, 'dollars': dollars}
+
+    response = requests.post(url + 'deposit_or_withdraw', json=data)
     print(response.json())
 
 
@@ -80,6 +96,12 @@ def test_A():
     sell_order(nameA, 'apple', 6, 3)
 
     buy(nameB, 'apple', 2)
+
+
+def test_B():
+
+    buy_order(nameA, 'orange', 5, 1.49)
+
 
 
 def check_A1():
@@ -182,11 +204,15 @@ def main():
     connect_to_db()
 
     test_A()
-    check_A1()
-    check_A2()
-    check_A3()
-    check_A4()
-    check_A5()
+    # check_A1()
+    # check_A2()
+    # check_A3()
+    # check_A4()
+    # check_A5()
+
+    deposit_or_withdraw(nameA, 20)
+
+    # test_B()
 
 
 
