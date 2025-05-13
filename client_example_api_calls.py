@@ -57,6 +57,22 @@ def buy_order(name, resource_type, quantity, price):
     print(response.json())
 
 
+def cancel_sell_order(sell_id):
+
+    data = {'session_key': session_key, 'sell_id': sell_id}
+
+    response = requests.post(url + 'cancel_sell_order', json=data)
+    print(response.json())
+
+
+def cancel_buy_order(buy_id):
+
+    data = {'session_key': session_key, 'buy_id': buy_id}
+
+    response = requests.post(url + 'cancel_buy_order', json=data)
+    print(response.json())
+
+
 def buy(name, resource_type, quantity):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
@@ -101,6 +117,12 @@ def test_A():
 def test_B():
 
     buy_order(nameA, 'orange', 5, 1.49)
+    deposit_or_withdraw(nameA, 20)
+
+
+def test_C():
+
+    cancel_buy_order(1)
 
 
 
@@ -203,16 +225,17 @@ def main():
 
     connect_to_db()
 
-    test_A()
+    # test_A()
     # check_A1()
     # check_A2()
     # check_A3()
     # check_A4()
     # check_A5()
 
-    deposit_or_withdraw(nameA, 20)
-
     # test_B()
+
+    test_C()
+
 
 
 

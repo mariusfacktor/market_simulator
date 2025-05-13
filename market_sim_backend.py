@@ -662,14 +662,35 @@ def cancel_sell_order(session_key, sell_id):
     calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
     b_success = True
-    message = 'SUCCESS (cancel): sale %d canceled' % sell_id
+    message = 'SUCCESS (cancel sell order): sale %d canceled' % sell_id
 
     return b_success, message
 
 
 
-# TODO
-# def cancel_buy_order()
+def cancel_buy_order(session_key, buy_id):
+
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
+
+    person_id = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).one().person_id
+    resource_id = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).one().resource_id
+    quantity = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).one().quantity
+
+
+    # Set quantity to zero in sale row
+    obj = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).one()
+    obj.quantity = 0
+    obj.quantity_available = 0
+    session.commit()
+
+    # Calculate quantity_available for each buy_order ordered by price (low to high)
+    calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
+
+    b_success = True
+    message = 'SUCCESS (cancel buy order): buy order %d canceled' % buy_id
+
+    return b_success, message
+
 
 
 def deposit_or_withdraw(session_key, name, option, dollars):
@@ -984,6 +1005,30 @@ def api_cancel_sell_order():
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
+
+
+
+@app.route('/cancel_buy_order', methods=['POST'])
+def api_cancel_buy_order():
+    if request.method == 'POST':
+        data = request.get_json()  # Get JSON data from the request body
+
+        session_key = data['session_key']
+        buy_id = data['buy_id']
+
+
+        b_success, message = cancel_buy_order(session_key, buy_id)
+
+
+        return_data = {
+                        'buy_id': buy_id
+                        }
+
+        response = {'message': message, 'data': return_data}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
 
 
 @app.route('/deposit_or_withdraw', methods=['POST'])
