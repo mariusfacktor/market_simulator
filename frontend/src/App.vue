@@ -338,10 +338,10 @@ export default {
       }
     },
 
-    async buy(name, resource_type, quantity) {
+    async buy_now(name, resource_type, quantity) {
       try {
 
-        let url = this.addr + '/buy'
+        let url = this.addr + '/buy_now'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -497,14 +497,14 @@ export default {
 
       try {
 
-        var deposit_or_withdraw_str = ''
+        var b_deposit = false;
         if (this.adminDepositWithdraw == 'Deposit') {
           // add money
-          deposit_or_withdraw_str = 'deposit';
+          b_deposit = true;
         }
         else {
           // subract money
-          deposit_or_withdraw_str = 'withdraw';
+          b_deposit = false;
         }
 
         let url = this.addr + '/deposit_or_withdraw'
@@ -512,7 +512,7 @@ export default {
         const headers = { 'Content-Type': 'application/json' };
         const body = { 'session_key': this.sessionKey,
                        'name': this.currentPerson,
-                       'option': deposit_or_withdraw_str,
+                       'b_deposit': b_deposit,
                        'dollars': this.adminMoney
                       };
 
@@ -542,14 +542,14 @@ export default {
 
       try {
 
-        var deposit_or_withdraw_str = ''
+        var b_deposit = false;
         if (this.adminDepositWithdrawResource == 'Deposit') {
           // add money
-          deposit_or_withdraw_str = 'deposit';
+          b_deposit = true;
         }
         else {
           // subract money
-          deposit_or_withdraw_str = 'withdraw';
+          b_deposit = false;
         }
 
         let url = this.addr + '/give_or_take_resource'
@@ -559,7 +559,7 @@ export default {
         const body = { 'session_key': this.sessionKey,
                        'name': this.currentPerson,
                        'resource_type': this.adminSelectedResource,
-                       'option': deposit_or_withdraw_str,
+                       'b_deposit': b_deposit,
                        'quantity': this.adminResourceAmount
                       };
 
@@ -952,7 +952,7 @@ export default {
               <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
 
               <div v-if="(money != null) && (money >= data_getPrice.data.price)">
-                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="buy_now(currentPerson, currentResource, buyQuantity)" rounded />
               </div>
 
             </div>

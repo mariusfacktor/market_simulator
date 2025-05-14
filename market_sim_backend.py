@@ -3,7 +3,7 @@ import random
 import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func, desc
 from sqlalchemy.dialects.mysql import DATETIME
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 from sqlalchemy_utc import utcnow
@@ -235,10 +235,10 @@ def calculate_quantity_available_for_buy_order(session_id, person_id, resource_i
 
         remaining_cash = cash # assume the person can spend all their money on each resource
 
-        # Update quantity available for each buy_order for each resource ordered by price (low to high)
+        # Update quantity available for each buy_order for each resource ordered by price (high to low)
         query = session.query(BuyOrder).filter(BuyOrder.session_id == session_id,
                                                BuyOrder.person_id == person_id,
-                                               BuyOrder.resource_id == resource_id).order_by(BuyOrder.price, BuyOrder.id).all()
+                                               BuyOrder.resource_id == resource_id).order_by(desc(BuyOrder.price), BuyOrder.id).all()
 
         for obj in query:
 
@@ -370,7 +370,7 @@ def buy_order(session_key, name, resource_type, quantity, price):
             session.add(new_buy_order)
             session.commit()
 
-            # Calculate quantity_available for each sell_order ordered by price (low to high)
+            # Calculate quantity_available for each sell_order ordered by price (high to low)
             calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
 
 
@@ -450,7 +450,7 @@ def get_price_toplevel(session_key, resource_type, desired_quantity=1):
     return b_success, message, price
 
 
-def buy(session_key, name, resource_type, quantity):
+def buy_now(session_key, name, resource_type, quantity):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -683,7 +683,7 @@ def cancel_buy_order(session_key, buy_id):
     obj.quantity_available = 0
     session.commit()
 
-    # Calculate quantity_available for each buy_order ordered by price (low to high)
+    # Calculate quantity_available for each buy_order ordered by price (high to low)
     calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
 
     b_success = True
@@ -693,13 +693,14 @@ def cancel_buy_order(session_key, buy_id):
 
 
 
-def deposit_or_withdraw(session_key, name, option, dollars):
+def deposit_or_withdraw(session_key, name, b_deposit, dollars):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
     person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
-    if option == 'withdraw':
+    if not b_deposit:
 
+        # withdraw
         buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
 
         if buyer_cash < dollars:
@@ -711,21 +712,24 @@ def deposit_or_withdraw(session_key, name, option, dollars):
 
     pay_or_charge_person(session_id, person_id, dollars)
 
+    action_str = 'deposit' if b_deposit else 'withdraw'
+
     b_success = True
-    message = 'Success (deposit): %s %.2f with account %s' %(option, dollars, name)
+    message = 'Success (deposit): %s %.2f with account %s' %(action_str, dollars, name)
 
     return b_success, message
 
 
 
-def give_or_take_resource(session_key, name, resource_type, option, quantity):
+def give_or_take_resource(session_key, name, resource_type, b_deposit, quantity):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
     person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    if option == 'withdraw':
+    if not b_deposit:
 
+        # withdraw
         available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
                                                                   PersonResource.person_id == person_id, 
                                                                   PersonResource.resource_id == resource_id).one().quantity
@@ -739,8 +743,10 @@ def give_or_take_resource(session_key, name, resource_type, option, quantity):
 
     give_or_take_product(session_id, person_id, resource_id, quantity)
 
+    action_str = 'deposit' if b_deposit else 'withdraw'
+
     b_success = True
-    message = 'Success (give): %s %d %s with account %s' %(option, quantity, resource_type, name)
+    message = 'Success (give): %s %d %s with account %s' %(action_str, quantity, resource_type, name)
 
     return b_success, message
 
@@ -858,8 +864,8 @@ def api_buy_order():
         return 'Method not allowed', 405
 
 
-@app.route('/buy', methods=['POST'])
-def api_buy():
+@app.route('/buy_now', methods=['POST'])
+def api_buy_now():
     if request.method == 'POST':
         data = request.get_json()  # Get JSON data from the request body
 
@@ -868,7 +874,7 @@ def api_buy():
         resource_type = data['resource_type']
         quantity = data['quantity']
 
-        b_success, message = buy(session_key, name, resource_type, quantity)
+        b_success, message = buy_now(session_key, name, resource_type, quantity)
 
         return_data = {
                         'name': name
@@ -1038,10 +1044,10 @@ def api_deposit_or_withdraw():
 
         session_key = data['session_key']
         name = data['name']
-        option = data['option']
+        b_deposit = data['b_deposit']
         dollars = data['dollars']
 
-        b_success, message = deposit_or_withdraw(session_key, name, option, dollars)
+        b_success, message = deposit_or_withdraw(session_key, name, b_deposit, dollars)
 
         return_data = {
                         'name': name
@@ -1061,10 +1067,10 @@ def api_give_or_take_resource():
         session_key = data['session_key']
         name = data['name']
         resource_type = data['resource_type']
-        option = data['option']
+        b_deposit = data['b_deposit']
         quantity = data['quantity']
 
-        b_success, message = give_or_take_resource(session_key, name, resource_type, option, quantity)
+        b_success, message = give_or_take_resource(session_key, name, resource_type, b_deposit, quantity)
 
         return_data = {
                         'name': name

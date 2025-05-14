@@ -73,17 +73,17 @@ def cancel_buy_order(buy_id):
     print(response.json())
 
 
-def buy(name, resource_type, quantity):
+def buy_now(name, resource_type, quantity):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
-    response = requests.post(url + 'buy', json=data)
+    response = requests.post(url + 'buy_now', json=data)
     print(response.json())
 
 
-def deposit_or_withdraw(name, dollars, option='deposit'):
+def deposit_or_withdraw(name, dollars, b_deposit=True):
 
-    data = {'session_key': session_key, 'name': name, 'option': option, 'dollars': dollars}
+    data = {'session_key': session_key, 'name': name, 'b_deposit': b_deposit, 'dollars': dollars}
 
     response = requests.post(url + 'deposit_or_withdraw', json=data)
     print(response.json())
@@ -111,7 +111,7 @@ def test_A():
     sell_order(nameA, 'apple', 10, 5)
     sell_order(nameA, 'apple', 6, 3)
 
-    buy(nameB, 'apple', 2)
+    buy_now(nameB, 'apple', 2)
 
 
 def test_B():
