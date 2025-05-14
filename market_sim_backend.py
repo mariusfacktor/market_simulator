@@ -125,7 +125,7 @@ session = Session_sqlalchemy()
 
 
 
-def get_market(session_id, resource_type):
+def get_sell_orders(session_id, resource_type):
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
@@ -305,6 +305,13 @@ def pay_or_charge_person(session_id, person_id, dollars):
 
 
 
+def transact_buy_and_sell_orders():
+    market = get_sell_orders(1, 'apple')
+    print(market)
+
+
+
+
 
 def sell_order(session_key, name, resource_type, quantity, price):
 
@@ -392,16 +399,16 @@ def buy_order(session_key, name, resource_type, quantity, price):
 
 def get_price(session_id, resource_type, desired_quantity):
 
-    market = get_market(session_id, resource_type)
+    sell_orders = get_sell_orders(session_id, resource_type)
 
     running_quantity = 0
     running_cost = 0
 
-    market_idx = 0
+    sell_order_idx = 0
     while running_quantity < desired_quantity:
 
-        curr_quantity = market[market_idx]['quantity_available']
-        curr_price = market[market_idx]['price']
+        curr_quantity = sell_orders[sell_order_idx]['quantity_available']
+        curr_price = sell_orders[sell_order_idx]['price']
 
         if curr_quantity + running_quantity <= desired_quantity:
             used_quantity = curr_quantity
@@ -411,7 +418,7 @@ def get_price(session_id, resource_type, desired_quantity):
         running_quantity += used_quantity
         running_cost += curr_price * used_quantity
 
-        market_idx += 1
+        sell_order_idx += 1
 
     return running_cost
 
@@ -477,7 +484,7 @@ def buy_now(session_key, name, resource_type, quantity):
                 if buyer_cash >= price:
 
 
-                    market = get_market(session_id, resource_type)
+                    sell_orders = get_sell_orders(session_id, resource_type)
 
                     running_quantity = 0
                     running_cost = 0
@@ -485,11 +492,11 @@ def buy_now(session_key, name, resource_type, quantity):
                     sell_idx = 0
                     while running_quantity < quantity:
 
-                        curr_quantity = market[sell_idx]['quantity']
-                        curr_quantity_available = market[sell_idx]['quantity_available']
-                        curr_price = market[sell_idx]['price']
-                        curr_seller = market[sell_idx]['person_id']
-                        curr_sale_id = market[sell_idx]['id']
+                        curr_quantity = sell_orders[sell_idx]['quantity']
+                        curr_quantity_available = sell_orders[sell_idx]['quantity_available']
+                        curr_price = sell_orders[sell_idx]['price']
+                        curr_seller = sell_orders[sell_idx]['person_id']
+                        curr_sale_id = sell_orders[sell_idx]['id']
 
                         if curr_quantity_available + running_quantity <= quantity:
                             used_quantity = curr_quantity_available
@@ -597,14 +604,14 @@ def get_assets(session_key, name):
 
 
 
-def get_market_toplevel(session_key, resource_type):
+def get_sell_orders_toplevel(session_key, resource_type):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     sell_list = None
 
     if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-        sell_list = get_market(session_id, resource_type)
+        sell_list = get_sell_orders(session_id, resource_type)
 
         b_success = True
         message = 'Success (market): returned selling data for %s' % resource_type
@@ -934,14 +941,14 @@ def api_get_assets():
 
 
 
-@app.route('/get_market', methods=['GET'])
-def api_get_market():
+@app.route('/get_sell_orders', methods=['GET'])
+def api_get_sell_orders():
     if request.method == 'GET':
 
         session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
 
-        b_success, message, sell_list = get_market_toplevel(session_key, resource_type)
+        b_success, message, sell_list = get_sell_orders_toplevel(session_key, resource_type)
 
         return_data = {
                         'resource_type': resource_type,
@@ -1124,6 +1131,9 @@ def api_create_session():
 
 
 def main():
+
+    transact_buy_and_sell_orders()
+
     app.run(host='0.0.0.0', port=8000, debug=True)
 
 

@@ -41,7 +41,7 @@ export default {
       // addr: 'https://market-sim.duckdns.org',
       addr: 'https://market-sim.serverpit.com',
 
-      data_getMarket: null,
+      data_getSellOrders: null,
       data_getPrice: null,
       data_getAssets: null,
       data_getPeople: null,
@@ -72,7 +72,7 @@ export default {
 
       currentResource: null,
       selectedSale: null,
-      data_getMarketForBuying: null,
+      data_getSellOrdersForBuying: null,
 
       buyQuantity: null,
       numAvailable: null,
@@ -110,10 +110,10 @@ export default {
 
   methods: {
 
-    async getMarket(resource_type) {
+    async getSellOrders(resource_type) {
       try {
 
-        let url = this.addr + '/get_market'
+        let url = this.addr + '/get_sell_orders'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
@@ -129,10 +129,10 @@ export default {
 
         console.log(response.data);
 
-        this.data_getMarket = response.data;
+        this.data_getSellOrders = response.data;
         this.error = null;
       } catch (err) {
-        this.data_getMarket = null;
+        this.data_getSellOrders = null;
         this.error = err.message;
       }
 
@@ -313,8 +313,8 @@ export default {
         // get updated list of resources
         await this.getAssets(name);
 
-        // get updated market
-        await this.getMarketForPerson(resource_type)
+        // get updated sell orders
+        await this.getSellOrdersForPerson(resource_type)
 
 
         // reset fields
@@ -325,10 +325,10 @@ export default {
         this.error = null;
 
 
-        // update buy market if buy is selecting the same resource just sold
+        // update sell orders if buy is selecting the same resource just sold
         if (this.currentResource !== null) {
           if (resource_type == this.currentResource) {
-            await this.getMarketForBuying(this.currentResource);
+            await this.getSellOrdersForBuying(this.currentResource);
           }
         }
 
@@ -374,8 +374,8 @@ export default {
       // reset
       this.buyQuantity = null;
 
-      // update buy market
-      await this.getMarketForBuying(resource_type);
+      // update sell orders for buying
+      await this.getSellOrdersForBuying(resource_type);
 
     },
 
@@ -410,8 +410,8 @@ export default {
       // refresh assets
       await this.getAssets(this.currentPerson);
 
-      // refresh market
-      await this.getMarketForPerson(this.selectedResource.type)
+      // refresh sell orders
+      await this.getSellOrdersForPerson(this.selectedResource.type)
 
     },
 
@@ -449,12 +449,12 @@ export default {
 
 
 
-    async getMarketForPerson(resource_type) {
+    async getSellOrdersForPerson(resource_type) {
 
-      await this.getMarket(resource_type);
+      await this.getSellOrders(resource_type);
 
       if (this.currentPerson) {
-        this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
+        this.currentPersonSales = this.data_getSellOrders.data.sell_list.filter(x => x.name == this.currentPerson);
       }
       else {
         this.currentPersonSales = null;
@@ -465,21 +465,21 @@ export default {
     },
 
 
-    async getMarketForBuying(resource_type) {
+    async getSellOrdersForBuying(resource_type) {
 
-      await this.getMarket(resource_type);
+      await this.getSellOrders(resource_type);
 
-      this.data_getMarketForBuying = this.data_getMarket;
+      this.data_getSellOrdersForBuying = this.data_getSellOrders;
 
       // Add up all the quantities to get total number for sale
       var num_available = 0;
-      for (let i = 0; i < this.data_getMarketForBuying.data.sell_list.length; i++) {
-        num_available += this.data_getMarketForBuying.data.sell_list[i].quantity_available;
+      for (let i = 0; i < this.data_getSellOrdersForBuying.data.sell_list.length; i++) {
+        num_available += this.data_getSellOrdersForBuying.data.sell_list[i].quantity_available;
       }
 
       // Get first price
-      if (this.data_getMarketForBuying.data.sell_list.length > 0) {
-        this.firstPrice = this.data_getMarketForBuying.data.sell_list[0].price;
+      if (this.data_getSellOrdersForBuying.data.sell_list.length > 0) {
+        this.firstPrice = this.data_getSellOrdersForBuying.data.sell_list[0].price;
       }
       else {
         this.firstPrice = null;
@@ -867,7 +867,7 @@ export default {
 
         <div v-if="data_getAssets">
 
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.type)" >
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getSellOrdersForPerson(selectedResource.type)" >
             <Column field="type" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
@@ -932,10 +932,10 @@ export default {
 
 
         <div v-if="data_getResources">
-          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
+          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getSellOrdersForBuying(currentResource)"/>
         </div>
 
-        <div v-if="currentResource && data_getMarketForBuying">
+        <div v-if="currentResource && data_getSellOrdersForBuying">
 
           <div v-if="firstPrice">
             <p class="relative text-xl text-center">Available: {{numAvailable}} &nbsp; &nbsp; &nbsp; Price: ${{firstPrice.toFixed(2)}}</p>
