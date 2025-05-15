@@ -125,6 +125,19 @@ def test_C():
     cancel_buy_order(1)
 
 
+def test_D():
+
+    create_session()
+    create_person(nameA, 100, resource_dict={'apple': 50})
+    create_person(nameB, 100, resource_dict={'orange': 30})
+    sell_order(nameA, 'apple', 10, 5.00)
+    sell_order(nameA, 'apple', 6, 3.30)
+    sell_order(nameA, 'apple', 4, 2.50)
+
+    buy_order(nameB, 'apple', 8, 4.4)
+
+
+
 
 def check_A1():
 
@@ -234,7 +247,9 @@ def main():
 
     # test_B()
 
-    test_C()
+    # test_C()
+
+    test_D()
 
 
 

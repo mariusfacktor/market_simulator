@@ -109,7 +109,6 @@ class SellHistory(Base):
     resource_id = Column(Integer, ForeignKey('resource.id'))
     quantity = Column(Integer)
     total_price = Column(Float)
-    sell_id  = Column(Integer, ForeignKey('sell_order.id'))
     timestamp = Column(DATETIME(fsp=6), server_default=utcnow())
 
 
@@ -125,10 +124,7 @@ session = Session_sqlalchemy()
 
 
 
-def get_sell_orders(session_id, resource_type):
-
-    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
-
+def get_sell_orders(session_id, resource_id):
 
     # sort by price (low to high) and then by sell_id (low to high) when prices are equal
     query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
@@ -139,6 +135,19 @@ def get_sell_orders(session_id, resource_type):
     sell_list = [dict(x._mapping) for x in query]
 
     return sell_list
+
+
+def get_buy_orders(session_id, resource_id):
+
+    # sort by price (high to low) and then by buy_id (low to high) when prices are equal
+    query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
+                    .join(Person, BuyOrder.person_id == Person.id)
+                    .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id, BuyOrder.quantity > 0)
+                    .order_by(desc(BuyOrder.price), BuyOrder.id)).all()
+
+    buy_list = [dict(x._mapping) for x in query]
+
+    return buy_list
 
 
 
@@ -304,10 +313,100 @@ def pay_or_charge_person(session_id, person_id, dollars):
     calculate_quantity_available_for_buy_order(session_id, person_id)
 
 
+def process_transaction(session_id, resource_id, seller_id, buyer_id,
+                        transaction_price, transaction_quantity,
+                        sell_order_id=None, buy_order_id=None):
 
-def transact_buy_and_sell_orders():
-    market = get_sell_orders(1, 'apple')
-    print(market)
+    cost = transaction_price * transaction_quantity
+
+    if sell_order_id:
+        obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_order_id).one()
+        obj.quantity = max(obj.quantity - transaction_quantity, 0)
+        session.commit()
+
+
+    if buy_order_id:
+        obj = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_order_id).one()
+        obj.quantity = max(obj.quantity - transaction_quantity, 0)
+        session.commit()
+
+
+
+    # Process the seller
+    # take items from the seller
+    give_or_take_product(session_id, seller_id, resource_id, -1 * transaction_quantity)
+
+    # pay seller
+    pay_or_charge_person(session_id, seller_id, cost)
+
+    # add entry to sell_history table
+    new_sell_history = SellHistory(session_id=session_id, person_id=seller_id, resource_id=resource_id,
+                                   quantity=transaction_quantity, total_price=cost)
+    session.add(new_sell_history)
+    session.commit()
+
+
+
+    # Process the buyer
+    # charge buyer
+    pay_or_charge_person(session_id, buyer_id, -1 * cost)
+
+    # give items to the buyer
+    give_or_take_product(session_id, buyer_id, resource_id, transaction_quantity)
+
+    # add entry to buy_history table
+    new_buy_history = BuyHistory(session_id=session_id, person_id=buyer_id, resource_id=resource_id,
+                                 quantity=transaction_quantity, total_price=cost)
+    session.add(new_buy_history)
+    session.commit()
+
+
+
+
+
+def transact_buy_and_sell_orders(session_id, resource_id):
+
+    b_done = False
+
+    while not b_done:
+
+        sell_orders = get_sell_orders(session_id, resource_id)
+        buy_orders = get_buy_orders(session_id, resource_id)
+
+
+        if not sell_orders or not buy_orders:
+            # End of buy orders or end of sell orders
+            b_done = True
+
+        else:
+            curr_sell_price = sell_orders[0]['price']
+            curr_buy_price = buy_orders[0]['price']
+
+            if curr_sell_price > curr_buy_price:
+                # No transaction to be made
+                b_done = True
+
+            else:
+                # Transaction
+
+                transaction_price = curr_sell_price
+
+                curr_sell_quantity = sell_orders[0]['quantity_available']
+                curr_seller_id = sell_orders[0]['person_id']
+                curr_sell_order_id = sell_orders[0]['id']
+
+                curr_buy_quantity = buy_orders[0]['quantity_available']
+                curr_buyer_id = buy_orders[0]['person_id']
+                curr_buy_order_id = buy_orders[0]['id']
+
+
+                transaction_quantity = min(curr_sell_quantity, curr_buy_quantity)
+
+
+                process_transaction(session_id=session_id, resource_id=resource_id,
+                                    seller_id=curr_seller_id, buyer_id=curr_buyer_id,
+                                    transaction_price=transaction_price, transaction_quantity=transaction_quantity,
+                                    sell_order_id=curr_sell_order_id, buy_order_id=curr_buy_order_id)
 
 
 
@@ -336,6 +435,8 @@ def sell_order(session_key, name, resource_type, quantity, price):
 
             # Calculate quantity_available for each sell_order ordered by price (low to high)
             calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
+
+            transact_buy_and_sell_orders(session_id, resource_id)
 
 
             b_success = True
@@ -380,6 +481,8 @@ def buy_order(session_key, name, resource_type, quantity, price):
             # Calculate quantity_available for each sell_order ordered by price (high to low)
             calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
 
+            transact_buy_and_sell_orders(session_id, resource_id)
+
 
             b_success = True
             message = 'Success (buy order): %s makes buy order of %d %s for price %.2f' % (name, quantity, resource_type, price)
@@ -399,7 +502,9 @@ def buy_order(session_key, name, resource_type, quantity, price):
 
 def get_price(session_id, resource_type, desired_quantity):
 
-    sell_orders = get_sell_orders(session_id, resource_type)
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
+    sell_orders = get_sell_orders(session_id, resource_id)
 
     running_quantity = 0
     running_cost = 0
@@ -484,7 +589,7 @@ def buy_now(session_key, name, resource_type, quantity):
                 if buyer_cash >= price:
 
 
-                    sell_orders = get_sell_orders(session_id, resource_type)
+                    sell_orders = get_sell_orders(session_id, resource_id)
 
                     running_quantity = 0
                     running_cost = 0
@@ -496,7 +601,7 @@ def buy_now(session_key, name, resource_type, quantity):
                         curr_quantity_available = sell_orders[sell_idx]['quantity_available']
                         curr_price = sell_orders[sell_idx]['price']
                         curr_seller = sell_orders[sell_idx]['person_id']
-                        curr_sale_id = sell_orders[sell_idx]['id']
+                        curr_sell_order_id = sell_orders[sell_idx]['id']
 
                         if curr_quantity_available + running_quantity <= quantity:
                             used_quantity = curr_quantity_available
@@ -507,42 +612,12 @@ def buy_now(session_key, name, resource_type, quantity):
                         running_quantity += used_quantity
                         running_cost += cost
 
-
-                        # buy from curr_seller
-                        # subtract quantity bought from sell order
-                        updated_quantity = curr_quantity - used_quantity
-
-                        obj = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == curr_sale_id).one()
-                        obj.quantity = updated_quantity
-                        session.commit()
-
-
-                        # take items from the seller
-                        give_or_take_product(session_id, curr_seller, resource_id, -1 * used_quantity)
-
-                        # pay seller
-                        pay_or_charge_person(session_id, curr_seller, cost)
+                        process_transaction(session_id=session_id, resource_id=resource_id,
+                                            seller_id=curr_seller, buyer_id=person_id,
+                                            transaction_price=curr_price, transaction_quantity=used_quantity,
+                                            sell_order_id=curr_sell_order_id)
 
                         sell_idx += 1
-
-                        # add entry to sell_history table
-                        new_sell_history = SellHistory(session_id=session_id, person_id=curr_seller, resource_id=resource_id,
-                                                       quantity=used_quantity, total_price=cost, sell_id=curr_sale_id)
-                        session.add(new_sell_history)
-                        session.commit()
-
-
-                    # charge buyer
-                    pay_or_charge_person(session_id, person_id, -1 * running_cost)
-
-                    # give items to the buyer
-                    give_or_take_product(session_id, person_id, resource_id, running_quantity)
-
-                    # add entry to buy_history table
-                    new_buy_history = BuyHistory(session_id=session_id, person_id=person_id, resource_id=resource_id,
-                                                 quantity=running_quantity, total_price=running_cost)
-                    session.add(new_buy_history)
-                    session.commit()
 
 
                     b_success = True
@@ -611,7 +686,10 @@ def get_sell_orders_toplevel(session_key, resource_type):
     sell_list = None
 
     if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-        sell_list = get_sell_orders(session_id, resource_type)
+
+        resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
+        sell_list = get_sell_orders(session_id, resource_id)
 
         b_success = True
         message = 'Success (market): returned selling data for %s' % resource_type
@@ -1131,9 +1209,6 @@ def api_create_session():
 
 
 def main():
-
-    transact_buy_and_sell_orders()
-
     app.run(host='0.0.0.0', port=8000, debug=True)
 
 
