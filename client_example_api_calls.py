@@ -81,6 +81,14 @@ def buy_now(name, resource_type, quantity):
     print(response.json())
 
 
+def sell_now(name, resource_type, quantity):
+
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
+
+    response = requests.post(url + 'sell_now', json=data)
+    print(response.json())
+
+
 def deposit_or_withdraw(name, dollars, b_deposit=True):
 
     data = {'session_key': session_key, 'name': name, 'b_deposit': b_deposit, 'dollars': dollars}
@@ -135,6 +143,18 @@ def test_D():
     sell_order(nameA, 'apple', 4, 2.50)
 
     buy_order(nameB, 'apple', 8, 4.4)
+
+
+def test_E():
+
+    # create_session()
+    # create_person(nameA, 100, resource_dict={'apple': 50})
+    # create_person(nameB, 100, resource_dict={'orange': 30})
+    # buy_order(nameA, 'orange', 10, 5.00)
+    # buy_order(nameA, 'orange', 6, 3.30)
+    # buy_order(nameA, 'orange', 4, 2.50)
+
+    sell_now(nameB, 'orange', 12)
 
 
 
@@ -249,7 +269,9 @@ def main():
 
     # test_C()
 
-    test_D()
+    # test_D()
+
+    test_E()
 
 
 
