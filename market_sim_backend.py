@@ -158,39 +158,42 @@ def create_person(session_key, name, cash, resource_dict):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    b_success = False
 
     # Check if person already exists in person table
-    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
-        new_person = Person(session_id=session_id, name=name, cash=cash)
-        session.add(new_person)
-        session.commit()
-
-        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-
-        # Add new resources to resource table
-        for resource_type, resource_quantity in resource_dict.items():
-            # Check if that resource type is already in the resource table
-            if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-                # add type to resource table
-                new_resource = Resource(session_id=session_id, type=resource_type)
-                session.add(new_resource)
-                session.commit()
-
-            # Add resource quantities to person_resource table
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
-                                                         Resource.type == resource_type).one().id
-
-            new_person_resource = PersonResource(session_id=session_id, person_id=person_id,
-                                                 resource_id=resource_id, quantity=resource_quantity)
-            session.add(new_person_resource)
-            session.commit()
-
-        b_success = True
-        message = 'Success (person): %s created' %name
-    else:
+    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         b_success = False
         message = 'Failure (person): %s already exists' % name
+
+        return b_success, message
+
+
+    new_person = Person(session_id=session_id, name=name, cash=cash)
+    session.add(new_person)
+    session.commit()
+
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
+    # Add new resources to resource table
+    for resource_type, resource_quantity in resource_dict.items():
+        # Check if that resource type is already in the resource table
+        if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
+            # add type to resource table
+            new_resource = Resource(session_id=session_id, type=resource_type)
+            session.add(new_resource)
+            session.commit()
+
+        # Add resource quantities to person_resource table
+        resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                     Resource.type == resource_type).one().id
+
+        new_person_resource = PersonResource(session_id=session_id, person_id=person_id,
+                                             resource_id=resource_id, quantity=resource_quantity)
+        session.add(new_person_resource)
+        session.commit()
+
+    b_success = True
+    message = 'Success (person): %s created' %name
+
 
     return b_success, message
 
@@ -416,39 +419,41 @@ def sell_order(session_key, name, resource_type, quantity, price):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    b_success = False
 
-    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
-
-        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-
-        if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
-                                                         Resource.type == resource_type).one().id
-
-
-            new_sell_order = SellOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
-                                       quantity=quantity, quantity_available=0, price=price)
-            session.add(new_sell_order)
-            session.commit()
-
-            # Calculate quantity_available for each sell_order ordered by price (low to high)
-            calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
-
-            transact_buy_and_sell_orders(session_id, resource_id)
-
-
-            b_success = True
-            message = 'Success (sell order): %s makes sell order of %d %s for price %.2f' % (name, quantity, resource_type, price)
-
-        else:
-            b_success = False
-            message = 'Failure (sell order): resource %s does not exist' % resource_type
-
-    else:
+    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         b_success = False
         message = 'Failure (sell order): %s does not exist' % name
+
+        return b_success, message
+
+
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
+        b_success = False
+        message = 'Failure (sell order): resource %s does not exist' % resource_type
+
+        return b_success, message
+
+
+
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                 Resource.type == resource_type).one().id
+
+
+    new_sell_order = SellOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
+                               quantity=quantity, quantity_available=0, price=price)
+    session.add(new_sell_order)
+    session.commit()
+
+    # Calculate quantity_available for each sell_order ordered by price (low to high)
+    calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
+
+    transact_buy_and_sell_orders(session_id, resource_id)
+
+
+    b_success = True
+    message = 'Success (sell order): %s makes sell order of %d %s for price %.2f' % (name, quantity, resource_type, price)
 
 
     return b_success, message
@@ -460,40 +465,40 @@ def buy_order(session_key, name, resource_type, quantity, price):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    b_success = False
 
-    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
-
-        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-
-        if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
-                                                         Resource.type == resource_type).one().id
-
-
-
-            new_buy_order = BuyOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
-                                     quantity=quantity, quantity_available=0, price=price)
-            session.add(new_buy_order)
-            session.commit()
-
-            # Calculate quantity_available for each sell_order ordered by price (high to low)
-            calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
-
-            transact_buy_and_sell_orders(session_id, resource_id)
-
-
-            b_success = True
-            message = 'Success (buy order): %s makes buy order of %d %s for price %.2f' % (name, quantity, resource_type, price)
-
-        else:
-            b_success = False
-            message = 'Failure (buy order): resource %s does not exist' % resource_type
-
-    else:
+    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         b_success = False
         message = 'Failure (buy order): %s does not exist' % name
+
+        return b_success, message
+
+
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
+        b_success = False
+        message = 'Failure (buy order): resource %s does not exist' % resource_type
+
+        return b_success, message
+
+
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                 Resource.type == resource_type).one().id
+
+
+    new_buy_order = BuyOrder(session_id=session_id, person_id=person_id, resource_id=resource_id,
+                             quantity=quantity, quantity_available=0, price=price)
+    session.add(new_buy_order)
+    session.commit()
+
+    # Calculate quantity_available for each sell_order ordered by price (high to low)
+    calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
+
+    transact_buy_and_sell_orders(session_id, resource_id)
+
+
+    b_success = True
+    message = 'Success (buy order): %s makes buy order of %d %s for price %.2f' % (name, quantity, resource_type, price)
 
 
     return b_success, message
@@ -536,31 +541,35 @@ def get_price_toplevel(session_key, resource_type, desired_quantity=1, b_sell_pr
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    b_success = False
     price = None
 
-    if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-
-        resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
-
-        # Get the number of items currently for sale for that resource
-        num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
-                              .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
-
-        if desired_quantity <= num_product:
-
-            price = get_price(session_id, resource_type, desired_quantity, b_sell_price=b_sell_price)
-
-            b_success = True
-            message = 'Success (price): price for %d %s is %.2f' % (desired_quantity, resource_type, price)
-
-        else:
-            b_success = False
-            message = 'Failure (price): not enough %s for sale' % resource_type
-
-    else:
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         b_success = False
         message = 'Failure (price): resource type %s does not exist' % resource_type
+
+        return b_success, message, price
+
+
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
+    # Get the number of items currently for sale for that resource
+    num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
+                          .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
+
+
+    if desired_quantity > num_product:
+        b_success = False
+        message = 'Failure (price): not enough %s for sale' % resource_type
+
+        return b_success, message, price
+
+
+    price = get_price(session_id, resource_type, desired_quantity, b_sell_price=b_sell_price)
+
+    b_success = True
+    message = 'Success (price): price for %d %s is %.2f' % (desired_quantity, resource_type, price)
+
+
 
     return b_success, message, price
 
@@ -569,78 +578,83 @@ def buy_now(session_key, name, resource_type, quantity):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    b_success = False
 
-    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
-
-        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-
-        if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
-                                                         Resource.type == resource_type).one().id
-
-            # Get the number of items currently for sale for that resource
-            num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
-                                  .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
-
-            if quantity <= num_product:
-
-                price = get_price(session_id, resource_type, quantity, b_sell_price=True)
-                buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
-
-                if buyer_cash >= price:
-
-
-                    sell_orders = get_sell_orders(session_id, resource_id)
-
-                    running_quantity = 0
-                    running_cost = 0
-
-                    sell_idx = 0
-                    while running_quantity < quantity:
-
-                        curr_quantity = sell_orders[sell_idx]['quantity']
-                        curr_quantity_available = sell_orders[sell_idx]['quantity_available']
-                        curr_price = sell_orders[sell_idx]['price']
-                        curr_seller = sell_orders[sell_idx]['person_id']
-                        curr_sell_order_id = sell_orders[sell_idx]['id']
-
-                        if curr_quantity_available + running_quantity <= quantity:
-                            used_quantity = curr_quantity_available
-                        else:
-                            used_quantity = quantity - running_quantity
-
-                        cost = curr_price * used_quantity
-                        running_quantity += used_quantity
-                        running_cost += cost
-
-                        process_transaction(session_id=session_id, resource_id=resource_id,
-                                            seller_id=curr_seller, buyer_id=person_id,
-                                            transaction_price=curr_price, transaction_quantity=used_quantity,
-                                            sell_order_id=curr_sell_order_id, buy_order_id=None)
-
-                        sell_idx += 1
-
-
-                    b_success = True
-                    message = 'Success (buy now): %s buys %d %s for cost %.2f' % (name, quantity, resource_type, running_cost)
-
-                else:
-                    b_success = False
-                    message = 'Failure (buy now): buyer %s cannot afford the cost %.2f for %s' % (name, price, resource_type)
-
-            else:
-                b_success = False
-                message = 'Failure (buy now): not enough %s for sale' % resource_type
-
-        else:
-            b_success = False
-            message = 'Failure (buy now): resource %s does not exist' % resource_type
-
-    else:
+    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         b_success = False
         message = 'Failure (buy now): person %s does not exist' % name
+
+        return b_success, message
+
+
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
+        b_success = False
+        message = 'Failure (buy now): resource %s does not exist' % resource_type
+
+        return b_success, message
+
+
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                 Resource.type == resource_type).one().id
+
+    # Get the number of items currently for sale for that resource
+    num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
+                          .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
+
+    price = get_price(session_id, resource_type, quantity, b_sell_price=True)
+    buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
+
+
+    if quantity > num_product:
+        b_success = False
+        message = 'Failure (buy now): not enough %s for sale' % resource_type
+
+        return b_success, message
+
+
+    if buyer_cash < price:
+        b_success = False
+        message = 'Failure (buy now): buyer %s cannot afford the cost %.2f for %s' % (name, price, resource_type)
+
+        return b_success, message
+
+
+
+    sell_orders = get_sell_orders(session_id, resource_id)
+
+    running_quantity = 0
+    running_cost = 0
+
+    sell_idx = 0
+    while running_quantity < quantity:
+
+        curr_quantity = sell_orders[sell_idx]['quantity']
+        curr_quantity_available = sell_orders[sell_idx]['quantity_available']
+        curr_price = sell_orders[sell_idx]['price']
+        curr_seller = sell_orders[sell_idx]['person_id']
+        curr_sell_order_id = sell_orders[sell_idx]['id']
+
+        if curr_quantity_available + running_quantity <= quantity:
+            used_quantity = curr_quantity_available
+        else:
+            used_quantity = quantity - running_quantity
+
+        cost = curr_price * used_quantity
+        running_quantity += used_quantity
+        running_cost += cost
+
+        process_transaction(session_id=session_id, resource_id=resource_id,
+                            seller_id=curr_seller, buyer_id=person_id,
+                            transaction_price=curr_price, transaction_quantity=used_quantity,
+                            sell_order_id=curr_sell_order_id, buy_order_id=None)
+
+        sell_idx += 1
+
+
+    b_success = True
+    message = 'Success (buy now): %s buys %d %s for cost %.2f' % (name, quantity, resource_type, running_cost)
+
 
     return b_success, message
 
@@ -650,80 +664,85 @@ def sell_now(session_key, name, resource_type, quantity):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    b_success = False
 
-    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
-
-        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-
-        if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-
-            resource_id = session.query(Resource).filter(Resource.session_id == session_id,
-                                                         Resource.type == resource_type).one().id
-
-            seller_quantity = (session.query(PersonResource.quantity)
-                                      .filter(PersonResource.session_id == session_id,
-                                              PersonResource.person_id == person_id,
-                                              PersonResource.resource_id == resource_id)).one()[0]
-
-            if seller_quantity >= quantity:
-
-
-                # Get the number of itmes available in the buy_orders for that resource
-                num_product = (session.query(func.coalesce(func.sum(BuyOrder.quantity_available), 0))
-                                      .filter(BuyOrder.session_id == session_id, BuyOrder.resource_id == resource_id)).one()[0]
-
-                if quantity <= num_product:
-
-                    buy_orders = get_buy_orders(session_id, resource_id)
-
-                    running_quantity = 0
-                    running_cost = 0
-
-                    buy_idx = 0
-                    while running_quantity < quantity:
-
-                        curr_quantity = buy_orders[buy_idx]['quantity']
-                        curr_quantity_available = buy_orders[buy_idx]['quantity_available']
-                        curr_price = buy_orders[buy_idx]['price']
-                        curr_buyer = buy_orders[buy_idx]['person_id']
-                        curr_buy_order_id = buy_orders[buy_idx]['id']
-
-                        if curr_quantity_available + running_quantity <= quantity:
-                            used_quantity = curr_quantity_available
-                        else:
-                            used_quantity = quantity - running_quantity
-
-                        cost = curr_price * used_quantity
-                        running_quantity += used_quantity
-                        running_cost += cost
-
-                        process_transaction(session_id=session_id, resource_id=resource_id,
-                                            seller_id=person_id, buyer_id=curr_buyer,
-                                            transaction_price=curr_price, transaction_quantity=used_quantity,
-                                            sell_order_id=None, buy_order_id=curr_buy_order_id)
-
-                        buy_idx += 1
-
-
-                    b_success = True
-                    message = 'Success (sell now): %s sells %d %s for cost %.2f' % (name, quantity, resource_type, running_cost)
-
-                else:
-                    b_success = False
-                    message = 'Failure (sell now): not enough %s in the buy_orders' % resource_type
-
-            else:
-                b_success = False
-                message = 'Failure (sell now): seller %s does not have enough quantity %d of resource %s' %(name, quantity, resource_type)
-
-        else:
-            b_success = False
-            message = 'Failure (sell now): resource %s does not exist' % resource_type
-
-    else:
+    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         b_success = False
         message = 'Failure (sell now): person %s does not exist' % name
+
+        return b_success, message
+
+
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
+        b_success = False
+        message = 'Failure (sell now): resource %s does not exist' % resource_type
+
+        return b_success, message
+
+
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id,
+                                                 Resource.type == resource_type).one().id
+
+    seller_quantity = (session.query(PersonResource.quantity)
+                              .filter(PersonResource.session_id == session_id,
+                                      PersonResource.person_id == person_id,
+                                      PersonResource.resource_id == resource_id)).one()[0]
+
+    # Get the number of itmes available in the buy_orders for that resource
+    num_product = (session.query(func.coalesce(func.sum(BuyOrder.quantity_available), 0))
+                          .filter(BuyOrder.session_id == session_id, BuyOrder.resource_id == resource_id)).one()[0]
+
+
+    if seller_quantity < quantity:
+        b_success = False
+        message = 'Failure (sell now): seller %s does not have enough quantity %d of resource %s' %(name, quantity, resource_type)
+
+        return b_success, message
+
+
+    if quantity > num_product:
+        b_success = False
+        message = 'Failure (sell now): not enough %s in the buy_orders' % resource_type
+
+        return b_success, message
+
+
+    buy_orders = get_buy_orders(session_id, resource_id)
+
+    running_quantity = 0
+    running_cost = 0
+
+    buy_idx = 0
+    while running_quantity < quantity:
+
+        curr_quantity = buy_orders[buy_idx]['quantity']
+        curr_quantity_available = buy_orders[buy_idx]['quantity_available']
+        curr_price = buy_orders[buy_idx]['price']
+        curr_buyer = buy_orders[buy_idx]['person_id']
+        curr_buy_order_id = buy_orders[buy_idx]['id']
+
+        if curr_quantity_available + running_quantity <= quantity:
+            used_quantity = curr_quantity_available
+        else:
+            used_quantity = quantity - running_quantity
+
+        cost = curr_price * used_quantity
+        running_quantity += used_quantity
+        running_cost += cost
+
+        process_transaction(session_id=session_id, resource_id=resource_id,
+                            seller_id=person_id, buyer_id=curr_buyer,
+                            transaction_price=curr_price, transaction_quantity=used_quantity,
+                            sell_order_id=None, buy_order_id=curr_buy_order_id)
+
+        buy_idx += 1
+
+
+    b_success = True
+    message = 'Success (sell now): %s sells %d %s for cost %.2f' % (name, quantity, resource_type, running_cost)
+
+
 
     return b_success, message
 
@@ -738,31 +757,30 @@ def get_assets(session_key, name):
     cash = None
     resource_list = None
 
-    if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
 
-        cash = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().cash
-
-
-        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
-
-
-
-        # Get resources from person name and sort by resource type
-        query = (session.query(Resource.type, PersonResource.quantity).join(Resource, PersonResource.resource_id == Resource.id)
-                        .filter(PersonResource.session_id == session_id, PersonResource.person_id == person_id)
-                        .order_by(Resource.type)).all()
-
-        resource_list = [dict(x._mapping) for x in query]
-
-
-
-        b_success = True
-        message = 'Success (assets): got assets for %s' % name
-
-    else:
-
+    if not session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
         b_success = False
         message = 'Failure (assets): %s does not exist' % name
+
+        return b_success, message, cash, resource_list
+
+
+    cash = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().cash
+
+    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
+
+    # Get resources from person name and sort by resource type
+    query = (session.query(Resource.type, PersonResource.quantity).join(Resource, PersonResource.resource_id == Resource.id)
+                    .filter(PersonResource.session_id == session_id, PersonResource.person_id == person_id)
+                    .order_by(Resource.type)).all()
+
+    resource_list = [dict(x._mapping) for x in query]
+
+
+    b_success = True
+    message = 'Success (assets): got assets for %s' % name
+
 
     return b_success, message, cash, resource_list
 
@@ -774,17 +792,20 @@ def get_sell_orders_toplevel(session_key, resource_type):
 
     sell_list = None
 
-    if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
 
-        resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
-
-        sell_list = get_sell_orders(session_id, resource_id)
-
-        b_success = True
-        message = 'Success (market): returned selling data for %s' % resource_type
-    else:
+    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         b_success = False
         message = 'Failure (market): resource type %s does not exist' % resource_type
+
+        return b_success, message, sell_list
+
+
+    resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
+    sell_list = get_sell_orders(session_id, resource_id)
+
+    b_success = True
+    message = 'Success (market): returned selling data for %s' % resource_type
 
     return b_success, message, sell_list
 
@@ -929,17 +950,20 @@ def new_resource(session_key, resource_type):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
-        new_resource = Resource(session_id=session_id, type=resource_type)
-        session.add(new_resource)
-        session.commit()
-
-        b_success = True
-        message = 'Success (new_resource): %s added to resource table' %resource_type
-
-    else:
+    if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         b_success = False
         message = 'Failure (new_resource): %s already exists in resource table' %resource_type
+
+        return b_success, message
+
+
+    new_resource = Resource(session_id=session_id, type=resource_type)
+    session.add(new_resource)
+    session.commit()
+
+    b_success = True
+    message = 'Success (new_resource): %s added to resource table' %resource_type
+
 
     return b_success, message
 
@@ -947,17 +971,19 @@ def new_resource(session_key, resource_type):
 
 def create_session(session_key):
 
-    if not session.query(Session).filter(Session.session_key == session_key).all():
-        new_session = Session(session_key=session_key)
-        session.add(new_session)
-        session.commit()
-
-        b_success = True
-        message = 'Success (session): session key %s created' %session_key
-
-    else:
+    if session.query(Session).filter(Session.session_key == session_key).all():
         b_success = True
         message = 'Success (session): session key %s already exists' %session_key
+
+        return b_success, message
+
+
+    new_session = Session(session_key=session_key)
+    session.add(new_session)
+    session.commit()
+
+    b_success = True
+    message = 'Success (session): session key %s created' %session_key
 
     return b_success, message
 

@@ -225,13 +225,13 @@ def check_A3():
 def check_A4():
 
     query = cursor.execute('''SELECT quantity FROM sell_history 
-                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND sell_id = 2 ''')
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1''')
     quantity = query.fetchall()[0][0]
     assert quantity == 2, '%s must have sold 2 apples' % nameA
 
 
     query = cursor.execute('''SELECT total_price FROM sell_history 
-                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND sell_id = 2 ''')
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1''')
     total_price = query.fetchall()[0][0]
     assert total_price == 6, '%s must have been paid $6' % nameA
 
@@ -258,12 +258,12 @@ def main():
 
     connect_to_db()
 
-    # test_A()
-    # check_A1()
-    # check_A2()
-    # check_A3()
-    # check_A4()
-    # check_A5()
+    test_A()
+    check_A1()
+    check_A2()
+    check_A3()
+    check_A4()
+    check_A5()
 
     # test_B()
 
@@ -271,7 +271,7 @@ def main():
 
     # test_D()
 
-    test_E()
+    # test_E()
 
 
 
