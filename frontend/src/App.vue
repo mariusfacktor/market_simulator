@@ -41,7 +41,7 @@ export default {
       // addr: 'https://market-sim.duckdns.org',
       addr: 'https://market-sim.serverpit.com',
 
-      data_getMarket: null,
+      data_getSellOrders: null,
       data_getPrice: null,
       data_getAssets: null,
       data_getPeople: null,
@@ -72,7 +72,7 @@ export default {
 
       currentResource: null,
       selectedSale: null,
-      data_getMarketForBuying: null,
+      data_getSellOrdersForBuying: null,
 
       buyQuantity: null,
       numAvailable: null,
@@ -110,10 +110,10 @@ export default {
 
   methods: {
 
-    async getMarket(resource_type) {
+    async getSellOrders(resource_type) {
       try {
 
-        let url = this.addr + '/get_market'
+        let url = this.addr + '/get_sell_orders'
 
         const headers = { 'Content-Type': 'application/json' };
         const params = {  'session_key': this.sessionKey,
@@ -129,10 +129,10 @@ export default {
 
         console.log(response.data);
 
-        this.data_getMarket = response.data;
+        this.data_getSellOrders = response.data;
         this.error = null;
       } catch (err) {
-        this.data_getMarket = null;
+        this.data_getSellOrders = null;
         this.error = err.message;
       }
 
@@ -288,10 +288,10 @@ export default {
 
     },
 
-    async sell(name, resource_type, quantity, price) {
+    async sell_order(name, resource_type, quantity, price) {
       try {
 
-        let url = this.addr + '/sell'
+        let url = this.addr + '/sell_order'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -313,8 +313,8 @@ export default {
         // get updated list of resources
         await this.getAssets(name);
 
-        // get updated market
-        await this.getMarketForPerson(resource_type)
+        // get updated sell orders
+        await this.getSellOrdersForPerson(resource_type)
 
 
         // reset fields
@@ -325,10 +325,10 @@ export default {
         this.error = null;
 
 
-        // update buy market if buy is selecting the same resource just sold
+        // update sell orders if buy is selecting the same resource just sold
         if (this.currentResource !== null) {
           if (resource_type == this.currentResource) {
-            await this.getMarketForBuying(this.currentResource);
+            await this.getSellOrdersForBuying(this.currentResource);
           }
         }
 
@@ -338,10 +338,10 @@ export default {
       }
     },
 
-    async buy(name, resource_type, quantity) {
+    async buy_now(name, resource_type, quantity) {
       try {
 
-        let url = this.addr + '/buy'
+        let url = this.addr + '/buy_now'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -374,16 +374,16 @@ export default {
       // reset
       this.buyQuantity = null;
 
-      // update buy market
-      await this.getMarketForBuying(resource_type);
+      // update sell orders for buying
+      await this.getSellOrdersForBuying(resource_type);
 
     },
 
 
-    async cancelSell(sell_id) {
+    async cancelSellOrder(sell_id) {
       try {
 
-        let url = this.addr + '/cancel_sell'
+        let url = this.addr + '/cancel_sell_order'
 
         const headers = { 'Content-Type': 'application/json' };
 
@@ -410,8 +410,8 @@ export default {
       // refresh assets
       await this.getAssets(this.currentPerson);
 
-      // refresh market
-      await this.getMarketForPerson(this.selectedResource.type)
+      // refresh sell orders
+      await this.getSellOrdersForPerson(this.selectedResource.type)
 
     },
 
@@ -449,12 +449,12 @@ export default {
 
 
 
-    async getMarketForPerson(resource_type) {
+    async getSellOrdersForPerson(resource_type) {
 
-      await this.getMarket(resource_type);
+      await this.getSellOrders(resource_type);
 
       if (this.currentPerson) {
-        this.currentPersonSales = this.data_getMarket.data.sell_list.filter(x => x.name == this.currentPerson);
+        this.currentPersonSales = this.data_getSellOrders.data.sell_list.filter(x => x.name == this.currentPerson);
       }
       else {
         this.currentPersonSales = null;
@@ -465,21 +465,21 @@ export default {
     },
 
 
-    async getMarketForBuying(resource_type) {
+    async getSellOrdersForBuying(resource_type) {
 
-      await this.getMarket(resource_type);
+      await this.getSellOrders(resource_type);
 
-      this.data_getMarketForBuying = this.data_getMarket;
+      this.data_getSellOrdersForBuying = this.data_getSellOrders;
 
       // Add up all the quantities to get total number for sale
       var num_available = 0;
-      for (let i = 0; i < this.data_getMarketForBuying.data.sell_list.length; i++) {
-        num_available += this.data_getMarketForBuying.data.sell_list[i].quantity;
+      for (let i = 0; i < this.data_getSellOrdersForBuying.data.sell_list.length; i++) {
+        num_available += this.data_getSellOrdersForBuying.data.sell_list[i].quantity_available;
       }
 
       // Get first price
-      if (this.data_getMarketForBuying.data.sell_list.length > 0) {
-        this.firstPrice = this.data_getMarketForBuying.data.sell_list[0].price;
+      if (this.data_getSellOrdersForBuying.data.sell_list.length > 0) {
+        this.firstPrice = this.data_getSellOrdersForBuying.data.sell_list[0].price;
       }
       else {
         this.firstPrice = null;
@@ -497,14 +497,14 @@ export default {
 
       try {
 
-        var deposit_or_withdraw_str = ''
+        var b_deposit = false;
         if (this.adminDepositWithdraw == 'Deposit') {
           // add money
-          deposit_or_withdraw_str = 'deposit';
+          b_deposit = true;
         }
         else {
           // subract money
-          deposit_or_withdraw_str = 'withdraw';
+          b_deposit = false;
         }
 
         let url = this.addr + '/deposit_or_withdraw'
@@ -512,7 +512,7 @@ export default {
         const headers = { 'Content-Type': 'application/json' };
         const body = { 'session_key': this.sessionKey,
                        'name': this.currentPerson,
-                       'option': deposit_or_withdraw_str,
+                       'b_deposit': b_deposit,
                        'dollars': this.adminMoney
                       };
 
@@ -542,14 +542,14 @@ export default {
 
       try {
 
-        var deposit_or_withdraw_str = ''
+        var b_deposit = false;
         if (this.adminDepositWithdrawResource == 'Deposit') {
           // add money
-          deposit_or_withdraw_str = 'deposit';
+          b_deposit = true;
         }
         else {
           // subract money
-          deposit_or_withdraw_str = 'withdraw';
+          b_deposit = false;
         }
 
         let url = this.addr + '/give_or_take_resource'
@@ -559,7 +559,7 @@ export default {
         const body = { 'session_key': this.sessionKey,
                        'name': this.currentPerson,
                        'resource_type': this.adminSelectedResource,
-                       'option': deposit_or_withdraw_str,
+                       'b_deposit': b_deposit,
                        'quantity': this.adminResourceAmount
                       };
 
@@ -867,7 +867,7 @@ export default {
 
         <div v-if="data_getAssets">
 
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getMarketForPerson(selectedResource.type)" >
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getSellOrdersForPerson(selectedResource.type)" >
             <Column field="type" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
@@ -884,7 +884,7 @@ export default {
             <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
             <div v-if="sellQuantity && sellPrice">
-              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="sell(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
+              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="sell_order(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
             </div>
 
             <div v-if="currentPersonSales">
@@ -896,7 +896,7 @@ export default {
               </DataTable>
 
               <div v-if="selectedSaleForCancel" >
-                <Button style="width: 100%;" type="submit" severity="info" label="Cancel listing" @click="cancelSell(selectedSaleForCancel.id)" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Cancel listing" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
               </div>
 
             </div>
@@ -932,10 +932,10 @@ export default {
 
 
         <div v-if="data_getResources">
-          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getMarketForBuying(currentResource)"/>
+          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getSellOrdersForBuying(currentResource)"/>
         </div>
 
-        <div v-if="currentResource && data_getMarketForBuying">
+        <div v-if="currentResource && data_getSellOrdersForBuying">
 
           <div v-if="firstPrice">
             <p class="relative text-xl text-center">Available: {{numAvailable}} &nbsp; &nbsp; &nbsp; Price: ${{firstPrice.toFixed(2)}}</p>
@@ -952,7 +952,7 @@ export default {
               <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
 
               <div v-if="(money != null) && (money >= data_getPrice.data.price)">
-                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="buy(currentPerson, currentResource, buyQuantity)" rounded />
+                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="buy_now(currentPerson, currentResource, buyQuantity)" rounded />
               </div>
 
             </div>
