@@ -602,15 +602,16 @@ def buy_now(session_key, name, resource_type, quantity):
     num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
                           .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
 
-    price = get_price(session_id, resource_type, quantity, b_sell_price=True)
-    buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
-
 
     if quantity > num_product:
         b_success = False
         message = 'Failure (buy now): not enough %s for sale' % resource_type
 
         return b_success, message
+
+
+    price = get_price(session_id, resource_type, quantity, b_sell_price=True)
+    buyer_cash = session.query(Person).filter(Person.session_id == session_id, Person.id == person_id).one().cash
 
 
     if buyer_cash < price:

@@ -70,7 +70,7 @@ def buy(name):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
-    response = requests.post(url + 'buy', json=data)
+    response = requests.post(url + 'buy_now', json=data)
     print(response.json())
 
 
