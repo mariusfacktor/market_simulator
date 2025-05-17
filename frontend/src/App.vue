@@ -416,7 +416,7 @@ export default {
       // update buy market if buy is selecting the same resource just sold
       if (this.currentResource !== null) {
         if (this.selectedResource.type == this.currentResource) {
-          await this.getMarketForBuying(this.currentResource);
+          await this.getSellOrdersForBuying(this.currentResource);
         }
       }
 
