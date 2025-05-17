@@ -36,10 +36,10 @@ export default {
   data() {
     return {
 
-      // addr: 'http://127.0.0.1' + ':' + '8000',
+      addr: 'http://127.0.0.1' + ':' + '8000',
       // addr: 'http://34.82.55.106' + ':' + '8000',
       // addr: 'https://market-sim.duckdns.org',
-      addr: 'https://market-sim.serverpit.com',
+      // addr: 'https://market-sim.serverpit.com',
 
       data_getSellOrders: null,
       data_getPrice: null,
