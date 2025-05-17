@@ -1,6 +1,17 @@
 
 // npm run dev
 
+
+// Push frontend changes
+// cd frontend
+// npm run build
+// cd ..
+// git add frontend
+// git commit -m "rebuilt frontend"
+// git push origin main
+// git subtree push --prefix frontend/dist origin gh-pages
+
+
 <script>
 
 import InputText from 'primevue/inputtext';
@@ -712,9 +723,7 @@ export default {
 <template>
 
 
-  <body>
-
-
+  <div :style="{ backgroundColor: '#f0f2f5' }">
 
 
 
@@ -987,9 +996,7 @@ export default {
     </div>
 
 
-
-  </body>
-
+  </div>
 
   
 </template>
@@ -1003,28 +1010,25 @@ export default {
   display: flex;
   justify-content: space-around;
   height: 18vh;
-  width: 90vw;
 }
 
 .flexbox-container-bottom {
   display: flex;
   justify-content: space-around;
   height: 65vh;
-  width: 90vw;
 }
 
 .flexbox-container {
   display: flex;
   justify-content: space-around;
   height: 82vh;
-  width: 90vw;
 }
 
 .flexbox-item {
   width: 300px;
   margin: 8px;
-  border: 3px solid #8e9dbb;
-  background-color: #ebe6dd;
+  border: 3px solid #b4bed4;
+  background-color: #ffffff;
 }
 
 .flexbox-item-1 {
