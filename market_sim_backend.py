@@ -133,7 +133,7 @@ def get_sell_orders(session_id, resource_id, person_id=None):
         query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
                         .join(Person, SellOrder.person_id == Person.id)
                         .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id,
-                                SellOrder.quantity_available > 0, SellOrder.person_id == person_id)
+                                SellOrder.quantity > 0, SellOrder.person_id == person_id)
                         .order_by(SellOrder.price, SellOrder.id)).all()
 
     else:
@@ -157,7 +157,7 @@ def get_buy_orders(session_id, resource_id, person_id=None):
         query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
                         .join(Person, BuyOrder.person_id == Person.id)
                         .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id,
-                                BuyOrder.quantity_available > 0, BuyOrder.person_id == person_id)
+                                BuyOrder.quantity > 0, BuyOrder.person_id == person_id)
                         .order_by(desc(BuyOrder.price), BuyOrder.id)).all()
 
     else:
