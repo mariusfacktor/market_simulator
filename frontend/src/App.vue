@@ -110,15 +110,26 @@ export default {
 
   methods: {
 
-    async getSellOrders(resource_type) {
+    async getSellOrders(resource_type, name=null) {
       try {
 
         let url = this.addr + '/get_sell_orders'
 
         const headers = { 'Content-Type': 'application/json' };
-        const params = {  'session_key': this.sessionKey,
-                          'resource_type': resource_type 
-                        };
+        var params = {};
+
+        if (name === null) {
+          params = {  'session_key': this.sessionKey,
+                      'resource_type': resource_type
+                    };
+        }
+
+        else {
+          params = {  'session_key': this.sessionKey,
+                      'resource_type': resource_type,
+                      'name': name
+                    };
+        }
 
         const response = await axios({
           method: 'get',
@@ -458,10 +469,10 @@ export default {
 
     async getSellOrdersForPerson(resource_type) {
 
-      await this.getSellOrders(resource_type);
+      await this.getSellOrders(resource_type, this.currentPerson);
 
       if (this.currentPerson) {
-        this.currentPersonSales = this.data_getSellOrders.data.sell_list.filter(x => x.name == this.currentPerson);
+        this.currentPersonSales = this.data_getSellOrders.data.sell_list;
       }
       else {
         this.currentPersonSales = null;
