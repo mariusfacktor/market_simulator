@@ -411,7 +411,14 @@ export default {
       await this.getAssets(this.currentPerson);
 
       // refresh sell orders
-      await this.getSellOrdersForPerson(this.selectedResource.type)
+      await this.getSellOrdersForPerson(this.selectedResource.type);
+
+      // update buy market if buy is selecting the same resource just sold
+      if (this.currentResource !== null) {
+        if (this.selectedResource.type == this.currentResource) {
+          await this.getMarketForBuying(this.currentResource);
+        }
+      }
 
     },
 
