@@ -892,9 +892,14 @@ export default {
             <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
           </div>
 
+        </div>
+
 
 
           <br>
+
+
+        <div v-if="currentPerson && currentResource">
 
 
           <div style="text-align:center;">
