@@ -69,10 +69,6 @@ export default {
       createdPerson: '',
       currentPerson: '',
 
-      selectPersonButton: null,
-      createPersonButton: null,
-      selectButtonPerson: null,
-
       money: null,
       selectedResource: null,
       sellQuantity: null,
@@ -277,6 +273,11 @@ export default {
 
 
     async createPerson(name) {
+
+      if (name == '') {
+        return;
+      }
+
       try {
 
         let url = this.addr + '/create_person'
@@ -307,6 +308,9 @@ export default {
 
       // set currentPerson
       this.setCurrentPerson(name);
+
+      // Update
+      this.getPeople();
 
     },
 
@@ -445,28 +449,9 @@ export default {
     },
 
 
-    async buttonSelectOrCreatePerson(name) {
-
-      if (name == 'Select person') {
-
-        this.selectPersonButton = true;
-        this.createPersonButton = false;
-        this.getPeople()
-        }
-      else if (name == 'Create person') {
-
-        this.selectPersonButton = false;
-        this.createPersonButton = true;
-      }
-      else {
-        this.selectPersonButton = false;
-        this.createPersonButton = false;
-      }
-    },
-
-
     async setCurrentPerson(name) {
       this.currentPerson = name;
+      this.selectedPerson = name;
 
       await this.getAssets(name);
 
@@ -569,6 +554,10 @@ export default {
 
     async giveOrTakeResource() {
 
+      if (this.currentResource === null)  {
+        return;
+      }
+
       try {
 
         var b_deposit = false;
@@ -587,7 +576,7 @@ export default {
 
         const body = { 'session_key': this.sessionKey,
                        'name': this.currentPerson,
-                       'resource_type': this.adminSelectedResource,
+                       'resource_type': this.currentResource,
                        'b_deposit': b_deposit,
                        'quantity': this.adminResourceAmount
                       };
@@ -615,6 +604,10 @@ export default {
 
 
     async newResource(resource_type) {
+
+      if (resource_type === null) {
+        return;
+      }
 
       try {
 
@@ -649,6 +642,8 @@ export default {
       // update
       await this.getResources();
 
+      this.currentResource = resource_type;
+
     },
 
 
@@ -656,6 +651,20 @@ export default {
     async setSessionKey() {
       this.sessionKey = this.typingSessionKey;
       this.typingSessionKey = null;
+
+      if (this.sessionKey === null) {
+        // reset
+        this.data_getPeople = null;
+        this.currentPerson = null;
+        this.money = null;
+        this.data_getAssets = null;
+        this.currentResource = null;
+        this.data_getResources = null;
+        this.selectedResource = null;
+        this.adminToggle = null;
+
+        return;
+      }
 
       try {
 
@@ -684,13 +693,11 @@ export default {
 
       // reset
       this.currentPerson = null;
-      this.selectPersonButton = null;
       this.money = null;
       this.data_getAssets = null;
       this.currentResource = null;
       this.data_getResources = null;
       this.selectedResource = null;
-      this.selectButtonPerson = null;
       this.adminToggle = null;
 
       // Get list of resources
@@ -821,123 +828,97 @@ export default {
 
         <div style="text-align:center;">
           <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-user" style="font-size: 2.5rem"></i>
-            Person
+            <i class="pi pi-building-columns" style="font-size: 2.5rem"></i>
+            Admin
           </p>
         </div>
         <br>
 
-        <div v-if="sessionKey">
-          <div v-if="currentPerson">
-            <p style="font-weight: bold;" class="relative text-xl text-center">Name: {{ currentPerson }}</p>
-          </div>
-          <div v-else>
-            <p class="relative text-xl text-center">Select or create a person</p>
+
+        <div v-if="sessionKey" >
+          <div style="text-align:center;">
+            <p style="display:inline-block;" class="relative text-xl text-center">
+              create a new person
+            </p>
           </div>
 
-          <SelectButton v-model="selectButtonPerson" @click="buttonSelectOrCreatePerson(selectButtonPerson)" :options="['Select person', 'Create person']" />
+          <div style="text-align:center;">
+            <InputText type="text" v-model="createdPerson" placeholder="name" style="text-align:center;" />
 
+              <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" />
+          </div>
+        </div>
+
+        <br>
+
+
+
+
+
+        <div v-if="sessionKey" >
+          <div style="text-align:center;">
+            <p style="display:inline-block;" class="relative text-xl text-center">
+              create a new resource
+            </p>
+          </div>
+
+          <div style="text-align:center;">
+            <InputText type="text" v-model="newResourceType" placeholder="resource" style="text-align:center;" />
+
+            <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" />
+          </div>
         </div>
 
 
+        <br>
 
-        <div v-if="selectPersonButton">
-
-          <div v-if="data_getPeople">
-            <Select v-model="selectedPerson" :options="data_getPeople.data.people" placeholder="Select person" class="w-full md:w-56" filter @update:modelValue="setCurrentPerson(selectedPerson)"/>
-          </div>
-
-        </div>
-
-
-
-
-        <div v-if="createPersonButton" style="width: 100%">
-
-          <InputText type="text" v-model="createdPerson" placeholder="Name" style="width: 100%;" />
-
-          <div v-if="createdPerson">
-            <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" rounded />
-          </div>
-
-        </div>
-
-
-
-        <div v-if="money != null">
-          <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
-        </div>
 
         <div v-if="currentPerson">
-          <br><br>
-          <div v-if="adminToggle">
-            <ToggleSwitch v-model="adminToggle" />
-            <span> &nbsp; &nbsp; Admin mode enabled </span>
-          </div>
-          <div v-else>
-            <ToggleSwitch v-model="adminToggle" />
-            <span> &nbsp; &nbsp; Admin mode disabled &nbsp; &nbsp; </span>
-          </div>
-        </div>
 
-        <div v-if="adminToggle">
-
-          <SelectButton v-model="adminSelectMoneyOrResorce" :options="['Money', 'Resource']" />
-
-          <div v-if="adminSelectMoneyOrResorce == 'Money'">
-
-            <InputNumber v-model="adminMoney" placeholder="Deposit or withdraw" inputId="currency-us" mode="currency" currency="USD" locale="en-US" fluid />
-
-            <div v-if="adminMoney">
-              <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
-            </div>
-            <div v-if="adminMoney && adminDepositWithdraw">
-              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" rounded />
-            </div>
-
+          <div style="text-align:center;">
+            <p style="display:inline-block;" class="relative text-xl text-center">
+              deposit or withdraw money
+            </p>
           </div>
 
-          <div v-if="adminSelectMoneyOrResorce == 'Resource'">
-            <SelectButton v-model="selectButtonResource" :options="['Select resource', 'Create resource']" />
+
+          <div style="text-align:center;">
+            <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
           </div>
 
-          <div v-if="adminSelectMoneyOrResorce == 'Resource' && selectButtonResource == 'Select resource' && data_getResources">
+          <div style="text-align:center;">
+            <InputNumber v-model="adminMoney" placeholder="amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" style="text-align:center;" />
 
-            <Select v-model="adminSelectedResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter/>
-
-            <div v-if="adminSelectedResource">
-
-              <InputNumber v-model="adminResourceAmount" placeholder="Deposit or withdraw" inputId="integeronly" fluid />
-
-              <div v-if="adminResourceAmount">
-                <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" />
-              </div>
-
-              <div v-if="adminResourceAmount && adminDepositWithdrawResource">
-                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" rounded />
-              </div>
-
-            </div>
-
+            <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
           </div>
 
-          <div v-if="adminSelectMoneyOrResorce == 'Resource' && selectButtonResource == 'Create resource'">
-            
-            <InputText type="text" v-model="newResourceType" placeholder="Resource type" style="width: 100%;" />
 
-            <div v-if="newResourceType">
-              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" rounded />
-            </div>
 
+          <br>
+
+
+          <div style="text-align:center;">
+            <p style="display:inline-block;" class="relative text-xl text-center">
+              deposit or withdraw resource
+            </p>
+          </div>
+
+          <div style="text-align:center;">
+            <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" />
+          </div>
+
+          <div style="text-align:center;">
+            <InputNumber v-model="adminResourceAmount" placeholder="quantity" inputId="integeronly" style="text-align:center;" />
+
+            <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
           </div>
 
         </div>
-
-
-
-
 
       </div>
+
+
+
 
 
 
@@ -1009,6 +990,10 @@ export default {
         </div>
         <br>
 
+        <div v-if="money != null">
+          <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
+        </div>
+
 
         <div v-if="data_getResources && sessionKey">
           <div v-if="currentResource">
@@ -1072,6 +1057,7 @@ export default {
   display: flex;
   justify-content: space-around;
   height: 18vh;
+  min-height: 145px;
 }
 
 .flexbox-container-bottom {
