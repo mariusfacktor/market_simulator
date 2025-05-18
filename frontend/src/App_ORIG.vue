@@ -47,10 +47,10 @@ export default {
   data() {
     return {
 
-      addr: 'http://127.0.0.1' + ':' + '8000',
+      // addr: 'http://127.0.0.1' + ':' + '8000',
       // addr: 'http://34.82.55.106' + ':' + '8000',
       // addr: 'https://market-sim.duckdns.org',
-      // addr: 'https://market-sim.serverpit.com',
+      addr: 'https://market-sim.serverpit.com',
 
       data_getSellOrders: null,
       data_getPrice: null,
@@ -693,11 +693,9 @@ export default {
       this.selectButtonPerson = null;
       this.adminToggle = null;
 
-      // Get list of resources
+      // start
       await this.getResources();
 
-      // Get list of people
-      await this.getPeople();
 
     },
 
@@ -732,82 +730,22 @@ export default {
     <div class="flexbox-container-top">
       <div class="flexbox-item flexbox-item-4">
 
-        <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-key" style="font-size: 2.5rem"></i>
-            Session
-          </p>
-        </div>
-
         <div v-if="sessionKey">
-          <p style="font-weight: bold;" class="relative text-xl text-center text-blue-500">{{ sessionKey }}</p>
+          <p style="font-weight: bold;" class="relative text-xl text-center">Session key: {{ sessionKey }}</p>
         </div>
         <div v-else>
-          <p class="relative text-xl text-center">enter a session key</p>
+          <p class="relative text-xl text-center">Enter a new or existing Session key</p>
         </div>
 
         <div style="text-align:center;">
-          <InputText type="text" v-model="typingSessionKey" placeholder="session key" style="text-align:center;" @keyup.enter="setSessionKey" />
-        
-          <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="setSessionKey" />
+          <InputText type="text" v-model="typingSessionKey" placeholder="Session key" style="text-align:center;" @keyup.enter="setSessionKey" />
+        </div>
+
+        <div v-if="typingSessionKey" style="text-align:center;">
+          <Button style="width: 200px;" type="submit" severity="info" label="Submit" @click="setSessionKey" rounded />
         </div>
 
       </div>
-
-
-
-      <div class="flexbox-item flexbox-item-6">
-
-        <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-user" style="font-size: 2.5rem"></i>
-            Person
-          </p>
-        </div>
-
-        <div v-if="currentPerson">
-          <p style="font-weight: bold;" class="relative text-xl text-center text-blue-500">{{ currentPerson }}</p>
-        </div>
-        <div v-else>
-          <p class="relative text-xl text-center">select a person</p>
-        </div>
-
-
-        <div v-if="data_getPeople" style="text-align:center;">
-          <Select v-model="selectedPerson" :options="data_getPeople.data.people" placeholder="person" class="w-full md:w-56" filter @update:modelValue="setCurrentPerson(selectedPerson)"/>
-        </div>
-
-      </div>
-
-
-
-      <div class="flexbox-item flexbox-item-7">
-
-        <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-ticket" style="font-size: 2.5rem"></i>
-            Resource
-          </p>
-        </div>
-
-
-        <div v-if="currentResource">
-          <p style="font-weight: bold;" class="relative text-xl text-center text-blue-500">{{ currentResource }}</p>
-        </div>
-        <div v-else>
-          <p class="relative text-xl text-center">select a resource</p>
-        </div>
-
-
-        <div v-if="data_getResources && sessionKey" style="text-align:center;">
-          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="resource" class="w-full md:w-56" filter @update:modelValue="getSellOrdersForBuying(currentResource)"/>
-        </div>
-
-
-      </div>
-
-
-
     </div>
 
 
@@ -1010,7 +948,7 @@ export default {
         <br>
 
 
-        <div v-if="data_getResources && sessionKey">
+        <div v-if="data_getResources">
           <div v-if="currentResource">
             <p style="font-weight: bold;" class="relative text-xl text-center">Resource: {{ currentResource }}</p>
           </div>
@@ -1020,7 +958,7 @@ export default {
         </div>
 
 
-        <div v-if="data_getResources && sessionKey">
+        <div v-if="data_getResources">
           <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getSellOrdersForBuying(currentResource)"/>
         </div>
 
@@ -1110,14 +1048,6 @@ export default {
 }
 
 .flexbox-item-5 {
-  flex-grow: 1;
-}
-
-.flexbox-item-6 {
-  flex-grow: 1;
-}
-
-.flexbox-item-7 {
   flex-grow: 1;
 }
 
