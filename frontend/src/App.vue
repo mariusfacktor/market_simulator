@@ -509,6 +509,10 @@ export default {
 
     async depositOrWithdraw() {
 
+      if (this.currentPerson === null || this.adminMoney === null || this.adminDepositWithdraw === null) {
+        return;
+      }
+
       try {
 
         var b_deposit = false;
@@ -554,7 +558,7 @@ export default {
 
     async giveOrTakeResource() {
 
-      if (this.currentResource === null)  {
+      if (this.currentResource === null || this.currentPerson === null || this.adminResourceAmount === null || this.adminDepositWithdrawResource === null)  {
         return;
       }
 

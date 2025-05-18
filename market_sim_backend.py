@@ -957,9 +957,19 @@ def give_or_take_resource(session_key, name, resource_type, b_deposit, quantity)
 
     if not b_deposit:
 
+        # check that person has resource
+        if not session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                                    PersonResource.person_id == person_id,
+                                                    PersonResource.resource_id == resource_id
+                                                    ).all():
+            b_success = False
+            message = 'Failure (give): %s has no %s to withdraw' %(name, resource_type)
+            return b_success, message
+
+
         # withdraw
-        available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
-                                                                  PersonResource.person_id == person_id, 
+        available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                                                  PersonResource.person_id == person_id,
                                                                   PersonResource.resource_id == resource_id).one().quantity
 
         if available_quantity < quantity:
