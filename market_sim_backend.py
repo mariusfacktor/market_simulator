@@ -1054,7 +1054,7 @@ def api_create_person():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1078,7 +1078,7 @@ def api_sell_order():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1101,7 +1101,7 @@ def api_buy_order():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1123,7 +1123,7 @@ def api_buy_now():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1145,7 +1145,7 @@ def api_sell_now():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1174,7 +1174,7 @@ def api_get_price():
                         'price': price
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1196,7 +1196,7 @@ def api_get_assets():
                         'resource_list': resource_list
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1222,7 +1222,7 @@ def api_get_sell_orders():
                         'sell_list': sell_list
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1240,7 +1240,7 @@ def api_get_people():
                         'people': person_list
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1259,7 +1259,7 @@ def api_get_resources():
                         }
 
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1281,7 +1281,7 @@ def api_cancel_sell_order():
                         'sell_id': sell_id
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1304,7 +1304,7 @@ def api_cancel_buy_order():
                         'buy_id': buy_id
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1327,7 +1327,7 @@ def api_deposit_or_withdraw():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1350,7 +1350,7 @@ def api_give_or_take_resource():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1370,7 +1370,7 @@ def api_new_resource():
                         'resource_type': resource_type
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1389,7 +1389,7 @@ def api_create_session():
                         'session_key': session_key
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405

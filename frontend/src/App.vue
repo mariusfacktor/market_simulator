@@ -24,9 +24,14 @@ import SelectButton from 'primevue/selectbutton';
 import InputNumber from 'primevue/inputnumber';
 import ToggleSwitch from 'primevue/toggleswitch';
 
+// https://www.npmjs.com/package/vue-toast-notification
+import {useToast} from 'vue-toast-notification';
+import 'vue-toast-notification/dist/theme-sugar.css';
+
 import axios from 'axios';
 
 
+const $toast = useToast();
 
 
 export default {
@@ -116,6 +121,25 @@ export default {
   },
 
   methods: {
+
+    makeToast(message, b_success=true) {
+
+      var success_str;
+
+      if (b_success) {
+        success_str = 'success';
+      }
+      else {
+        success_str = 'error';
+      }
+
+      this.$toast.open({
+        message: message,
+        type: success_str, // success, info, warning, error, default
+        position: 'top',
+        duration: 3000,
+      });
+    },
 
     async getSellOrders(resource_type, name=null) {
       try {
@@ -275,8 +299,13 @@ export default {
     async createPerson(name) {
 
       if (name == '') {
+
+        this.makeToast('Missing info', false);
+
         return;
       }
+
+      let response;
 
       try {
 
@@ -290,7 +319,7 @@ export default {
                        'resource_dict': {} };
                        // 'resource_dict': {'apple': 4} };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -311,6 +340,8 @@ export default {
 
       // Update
       this.getPeople();
+
+      this.makeToast(response.data.message, response.data.b_success);
 
     },
 
@@ -510,8 +541,14 @@ export default {
     async depositOrWithdraw() {
 
       if (this.currentPerson === null || this.adminMoney === null || this.adminDepositWithdraw === null) {
+
+        // toast
+        this.makeToast('Missing info', false);
+
         return;
       }
+
+      let response;
 
       try {
 
@@ -534,7 +571,7 @@ export default {
                        'dollars': this.adminMoney
                       };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -551,7 +588,9 @@ export default {
       }
 
       // update money
-      this.getAssets(this.currentPerson);
+      await this.getAssets(this.currentPerson);
+
+      this.makeToast(response.data.message, response.data.b_success);
 
     },
 
@@ -559,8 +598,13 @@ export default {
     async giveOrTakeResource() {
 
       if (this.currentResource === null || this.currentPerson === null || this.adminResourceAmount === null || this.adminDepositWithdrawResource === null)  {
+
+        this.makeToast('Missing info', false);
+
         return;
       }
+
+      let response;
 
       try {
 
@@ -585,7 +629,7 @@ export default {
                        'quantity': this.adminResourceAmount
                       };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -604,14 +648,21 @@ export default {
       // update person's resources
       this.getAssets(this.currentPerson);
 
+      this.makeToast(response.data.message, response.data.b_success);
+
     },
 
 
     async newResource(resource_type) {
 
       if (resource_type === null) {
+
+        this.makeToast('Missing info', false);
+
         return;
       }
+
+      let response;
 
       try {
 
@@ -624,7 +675,7 @@ export default {
                        'resource_type': String(resource_type)
                       };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -647,6 +698,8 @@ export default {
       await this.getResources();
 
       this.currentResource = resource_type;
+
+      this.makeToast(response.data.message, response.data.b_success);
 
     },
 
