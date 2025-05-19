@@ -136,7 +136,7 @@ export default {
       this.$toast.open({
         message: message,
         type: success_str, // success, info, warning, error, default
-        position: 'top',
+        position: 'bottom-right',
         duration: 3000,
       });
     },
@@ -346,6 +346,16 @@ export default {
     },
 
     async sell_order(name, resource_type, quantity, price) {
+
+      if (name === null || resource_type === null || quantity === null || price === null) {
+
+        this.makeToast('Missing info', false);
+
+        return;
+      };
+
+      let response;
+
       try {
 
         let url = this.addr + '/sell_order'
@@ -358,7 +368,7 @@ export default {
                        'quantity': quantity,
                        'price': price };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -382,20 +392,21 @@ export default {
         this.error = null;
 
 
-        // update sell orders if buy is selecting the same resource just sold
-        if (this.currentResource !== null) {
-          if (resource_type == this.currentResource) {
-            await this.getSellOrdersForBuying(this.currentResource);
-          }
-        }
+        await this.getSellOrdersForBuying(this.currentResource);
 
       } catch (err) {
         this.data_sell = null;
         this.error = err.message;
       }
+
+      this.makeToast(response.data.message, response.data.b_success);
+
     },
 
     async buy_now(name, resource_type, quantity) {
+
+      let response;
+
       try {
 
         let url = this.addr + '/buy_now'
@@ -407,7 +418,7 @@ export default {
                        'resource_type': resource_type,
                        'quantity': quantity };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -433,6 +444,74 @@ export default {
 
       // update sell orders for buying
       await this.getSellOrdersForBuying(resource_type);
+
+      this.makeToast(response.data.message, response.data.b_success);
+
+    },
+
+
+    async sell_now(name, resource_type, quantity) {
+
+      let response;
+
+      try {
+
+        let url = this.addr + '/sell_now'
+
+        const headers = { 'Content-Type': 'application/json' };
+
+        const body = { 'session_key': this.sessionKey,
+                       'name': name,
+                       'resource_type': resource_type,
+                       'quantity': quantity };
+
+        response = await axios({
+          method: 'post',
+          url: url,
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.data_buy = response.data;
+        this.error = null;
+      } catch (err) {
+        this.data_buy = null;
+        this.error = err.message;
+      }
+
+      // refresh assets
+      if (this.currentPerson) {
+        await this.getAssets(this.currentPerson);
+      }
+
+      // reset
+      this.sellNowQuantity = null;
+
+      // update sell orders for buying
+      await this.getSellOrdersForBuying(resource_type);
+
+      this.makeToast(response.data.message, response.data.b_success);
+
+    },
+
+
+    async sell_now_or_sell_order() {
+
+      if (this.currentPerson === null || this.currentResource === null || this.sellQuantity === null) {
+
+        this.makeToast('Missing info', false);
+
+        return;
+      }
+
+      if (this.sellPrice != null) {
+        await this.sell_order(this.currentPerson, this.currentResource, this.sellQuantity, this.sellPrice);
+      }
+      else {
+        await this.sell_now(this.currentPerson, this.currentResource, this.sellQuantity);
+      }
 
     },
 
@@ -468,33 +547,18 @@ export default {
       await this.getAssets(this.currentPerson);
 
       // refresh sell orders
-      await this.getSellOrdersForPerson(this.selectedResource.type);
+      await this.getSellOrdersForPerson(this.currentResource);
 
-      // update buy market if buy is selecting the same resource just sold
-      if (this.currentResource !== null) {
-        if (this.selectedResource.type == this.currentResource) {
-          await this.getSellOrdersForBuying(this.currentResource);
-        }
-      }
+      // update buy market
+      await this.getSellOrdersForBuying(this.currentResource);
 
     },
-
-
-    async setCurrentPerson(name) {
-      this.currentPerson = name;
-      this.selectedPerson = name;
-
-      await this.getAssets(name);
-
-      // reset
-      this.selectedResource = null;
-      this.currentPersonSales = null;
-
-    },
-
 
 
     async getSellOrdersForPerson(resource_type) {
+
+      // Set resource type
+      this.currentResource = resource_type;
 
       await this.getSellOrders(resource_type, this.currentPerson);
 
@@ -508,6 +572,35 @@ export default {
       // reset
       this.selectedSaleForCancel = null;
     },
+
+
+    async setCurrentPerson(name) {
+      this.currentPerson = name;
+      this.selectedPerson = name;
+
+      await this.getAssets(name);
+
+      if (this.currentResource !== null) {
+        // get updated sell orders
+        await this.getSellOrdersForPerson(this.currentResource)
+      }
+
+      // reset
+      this.selectedResource = null;
+      this.currentPersonSales = null;
+
+    },
+
+    async setCurrentResource(resource_type) {
+      this.currentResource = resource_type;
+
+      if (this.currentPerson !== null) {
+        // get updated sell orders
+        await this.getSellOrdersForPerson(resource_type)
+      }
+
+    },
+
 
 
     async getSellOrdersForBuying(resource_type) {
@@ -719,9 +812,14 @@ export default {
         this.data_getResources = null;
         this.selectedResource = null;
         this.adminToggle = null;
+        this.selectedPerson = '';
+
+        this.makeToast('Missing info', false);
 
         return;
       }
+
+      let response;
 
       try {
 
@@ -732,7 +830,7 @@ export default {
         const body = { 'session_key': this.sessionKey,
                        };
 
-        const response = await axios({
+        response = await axios({
           method: 'post',
           url: url,
           headers: headers,
@@ -762,6 +860,8 @@ export default {
 
       // Get list of people
       await this.getPeople();
+
+      this.makeToast(response.data.message, response.data.b_success);
 
     },
 
@@ -864,7 +964,7 @@ export default {
 
 
         <div v-if="data_getResources && sessionKey" style="text-align:center;">
-          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="resource" class="w-full md:w-56" filter @update:modelValue="getSellOrdersForBuying(currentResource)"/>
+          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="resource" class="w-full md:w-56" filter @update:modelValue="setCurrentResource(currentResource)"/>
         </div>
 
 
@@ -999,46 +1099,56 @@ export default {
 
         <div v-if="data_getAssets">
 
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" @row-select="getSellOrdersForPerson(selectedResource.type)" >
+
+          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="204px" tableStyle="min-width: 10rem" @row-select="setCurrentResource(selectedResource.type)" >
             <Column field="type" header="Resource"></Column>
             <Column field="quantity" header="Quantity"></Column>
           </DataTable>
 
         </div>
 
+        <br>
 
-        <div v-if="selectedResource">
 
-          <p style="font-weight: bold;" class="relative text-xl text-center">{{selectedResource.type}}</p>
+        <div v-if="currentPerson && currentResource">
 
-            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="Sell quantity" fluid :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" />
 
-            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="Sell price" fluid :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" />
 
-            <div v-if="sellQuantity && sellPrice">
-              <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="sell_order(currentPerson, selectedResource.type, sellQuantity, sellPrice)" rounded />
-            </div>
+          <div style="text-align:center;">
 
-            <div v-if="currentPersonSales">
-              <p class="relative text-xl text-center">Selling</p>
+            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" style="text-align:center;" />
 
-              <DataTable selectionMode="single" v-model:selection="selectedSaleForCancel" :value="currentPersonSales" size="small" scrollable scrollHeight="400px" tableStyle="min-width: 10rem" >
-                <Column field="quantity" header="Quantity"></Column>
-                <Column field="price" header="Price"></Column>
-              </DataTable>
+            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" style="text-align:center;" />
 
-              <div v-if="selectedSaleForCancel" >
-                <Button style="width: 100%;" type="submit" severity="info" label="Cancel listing" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
-              </div>
 
-            </div>
+              <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="sell_now_or_sell_order()" />
+          </div>
+
+
+          <br>
+
+
+          <p class="relative text-xl text-center">your sell orders</p>
+
+          <DataTable selectionMode="single" v-model:selection="selectedSaleForCancel" :value="currentPersonSales" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
+            <Column field="quantity" header="Quantity"></Column>
+            <Column field="price" header="Price"></Column>
+          </DataTable>
+
+          <div v-if="selectedSaleForCancel" >
+            <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
+          </div>
+
 
         </div>
 
-        
-        
-
       </div>
+
+
+
+
+
+
 
 
 

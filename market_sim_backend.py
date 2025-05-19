@@ -707,6 +707,15 @@ def sell_now(session_key, name, resource_type, quantity):
     resource_id = session.query(Resource).filter(Resource.session_id == session_id,
                                                  Resource.type == resource_type).one().id
 
+    if not session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                PersonResource.person_id == person_id, 
+                                                PersonResource.resource_id == resource_id).all():
+        b_success = False
+        message = 'Failure (sell now): %s has no %s' % (name, resource_type)
+
+        return b_success, message
+
+
     seller_quantity = (session.query(PersonResource.quantity)
                               .filter(PersonResource.session_id == session_id,
                                       PersonResource.person_id == person_id,
@@ -795,7 +804,9 @@ def get_assets(session_key, name):
 
     # Get resources from person name and sort by resource type
     query = (session.query(Resource.type, PersonResource.quantity).join(Resource, PersonResource.resource_id == Resource.id)
-                    .filter(PersonResource.session_id == session_id, PersonResource.person_id == person_id)
+                    .filter(PersonResource.session_id == session_id, 
+                            PersonResource.person_id == person_id, 
+                            PersonResource.quantity > 0)
                     .order_by(Resource.type)).all()
 
     resource_list = [dict(x._mapping) for x in query]
