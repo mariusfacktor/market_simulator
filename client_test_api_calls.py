@@ -63,6 +63,20 @@ def sell_order(name):
     print(response.json())
 
 
+def buy_order(name):
+
+    resource_type = resources[random.randint(0, len(resources) - 1)]
+    quantity = random.randint(1, 10)
+
+    # price = random.randint(1, 15)
+    price = round(0.01 + (14.99 * random.random()), 2)
+
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
+
+    response = requests.post(url + 'buy_order', json=data)
+    print(response.json())
+
+
 def buy(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
@@ -71,6 +85,17 @@ def buy(name):
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
     response = requests.post(url + 'buy_now', json=data)
+    print(response.json())
+
+
+def sell(name):
+
+    resource_type = resources[random.randint(0, len(resources) - 1)]
+    quantity = random.randint(1, 15)
+
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
+
+    response = requests.post(url + 'sell_now', json=data)
     print(response.json())
 
 
@@ -84,7 +109,9 @@ def examples(num_iter=1):
         name = names[random.randint(0, len(names) - 1)]
 
         sell_order(name)
-        sell_order(name)
+        buy_order(name)
+
+        sell(name)
         buy(name)
 
 
@@ -100,7 +127,7 @@ def main():
 
     create_all_people()
 
-    num_iter = 50
+    num_iter = 100
 
     examples(num_iter)
 

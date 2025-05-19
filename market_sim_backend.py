@@ -321,6 +321,12 @@ def give_or_take_product(session_id, person_id, resource_id, quantity):
 
     calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
+    # # Make transactions between existing orders if possible
+    # transact_buy_and_sell_orders(session_id, resource_id)
+
+    # # Calculate quantity_available after possible transactions
+    # calculate_quantity_available_for_buy_order(session_id, person_id)
+    # calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
 
 def pay_or_charge_person(session_id, person_id, dollars):
@@ -336,6 +342,19 @@ def pay_or_charge_person(session_id, person_id, dollars):
     session.commit()
 
     calculate_quantity_available_for_buy_order(session_id, person_id)
+
+    # query = session.query(BuyOrder.resource_id).filter(BuyOrder.session_id == session_id,
+    #                                                    BuyOrder.person_id == person_id,
+    #                                                    BuyOrder.quantity_available > 0).all()
+    # resource_ids = list(set([x[0] for x in query]))
+
+    # for resource_id in resource_ids:
+    #     # Make transactions between existing orders if possible
+    #     transact_buy_and_sell_orders(session_id, resource_id)
+
+    #     # Calculate quantity_available after possible transactions
+    #     calculate_quantity_available_for_buy_order(session_id, person_id)
+    #     calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
 
 def process_transaction(session_id, resource_id, seller_id, buyer_id,
