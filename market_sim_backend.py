@@ -124,48 +124,60 @@ session = Session_sqlalchemy()
 
 
 
-def get_sell_orders(session_id, resource_id, person_id=None):
+def get_sell_orders(session_id, resource_id, person_id=None, b_quantity_available=True, limit=None):
 
-    # Optionally filter by person_id and if so, use quantity instead of quantity_available
+
+    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
+                        .join(Person, SellOrder.person_id == Person.id)
+                        .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id)
+                        .order_by(SellOrder.price, SellOrder.id))
+
+    if b_quantity_available:
+        query = query.filter(SellOrder.quantity_available > 0)
+    else:
+        query = query.filter(SellOrder.quantity > 0)
+
 
     if person_id:
-        # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-        query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
-                        .join(Person, SellOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id,
-                                SellOrder.quantity > 0, SellOrder.person_id == person_id)
-                        .order_by(SellOrder.price, SellOrder.id)).all()
+        query = query.filter(SellOrder.person_id == person_id)
 
-    else:
-        # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-        query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
-                        .join(Person, SellOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.quantity_available > 0)
-                        .order_by(SellOrder.price, SellOrder.id)).all()
+
+    if limit:
+        query = query.limit(limit)
+
+
+    query = query.all()
+
 
     sell_list = [dict(x._mapping) for x in query]
 
     return sell_list
 
 
-def get_buy_orders(session_id, resource_id, person_id=None):
+def get_buy_orders(session_id, resource_id, person_id=None, b_quantity_available=True, limit=None):
 
-    # Optionally filter by person_id and if so, use quantity instead of quantity_available
+
+    query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
+                        .join(Person, BuyOrder.person_id == Person.id)
+                        .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id)
+                        .order_by(desc(BuyOrder.price), BuyOrder.id))
+
+
+    if b_quantity_available:
+        query = query.filter(BuyOrder.quantity_available > 0)
+    else:
+        query = query.filter(BuyOrder.quantity > 0)
+
 
     if person_id:
-        # sort by price (high to low) and then by buy_id (low to high) when prices are equal
-        query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
-                        .join(Person, BuyOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id,
-                                BuyOrder.quantity > 0, BuyOrder.person_id == person_id)
-                        .order_by(desc(BuyOrder.price), BuyOrder.id)).all()
+        query = query.filter(BuyOrder.person_id == person_id)
 
-    else:
-        # sort by price (high to low) and then by buy_id (low to high) when prices are equal
-        query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
-                        .join(Person, BuyOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id, BuyOrder.quantity_available > 0)
-                        .order_by(desc(BuyOrder.price), BuyOrder.id)).all()
+
+    if limit:
+        query = query.limit(limit)
+
+
+    query = query.all()
 
     buy_list = [dict(x._mapping) for x in query]
 
@@ -406,8 +418,8 @@ def transact_buy_and_sell_orders(session_id, resource_id):
 
     while not b_done:
 
-        sell_orders = get_sell_orders(session_id, resource_id)
-        buy_orders = get_buy_orders(session_id, resource_id)
+        sell_orders = get_sell_orders(session_id, resource_id, limit=1)
+        buy_orders = get_buy_orders(session_id, resource_id, limit=1)
 
 
         if not sell_orders or not buy_orders:
@@ -857,7 +869,7 @@ def get_sell_orders_toplevel(session_key, resource_type, name=None):
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    sell_list = get_sell_orders(session_id, resource_id, person_id)
+    sell_list = get_sell_orders(session_id, resource_id, person_id, b_quantity_available=False)
 
     b_success = True
     message = 'Success (market): returned selling data for %s' % resource_type
