@@ -599,8 +599,10 @@ export default {
       }
 
       // reset
-      if (this.selectedResource.type != resource_type) {
-        this.selectedResource = null;
+      if (this.selectedResource !== null) {
+        if (this.selectedResource.type != resource_type) {
+          this.selectedResource = null;
+        }
       }
 
     },
