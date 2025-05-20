@@ -598,6 +598,11 @@ export default {
         await this.getSellOrdersForPerson(resource_type)
       }
 
+      // reset
+      if (this.selectedResource.type != resource_type) {
+        this.selectedResource = null;
+      }
+
     },
 
 
@@ -896,23 +901,23 @@ export default {
       <div class="flexbox-item flexbox-item-4">
 
         <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-key" style="font-size: 2.5rem"></i>
+          <p style="display:inline-block;" class="relative text-2xl text-center">
+            <i class="pi pi-key" style="font-size: 2.0rem;"></i>
             Session
           </p>
         </div>
 
         <div v-if="sessionKey">
-          <p style="font-weight: bold;" class="relative text-xl text-center text-blue-500">{{ sessionKey }}</p>
+          <p style="font-weight: bold;" class="relative text-lg text-center text-blue-500">{{ sessionKey }}</p>
         </div>
         <div v-else>
-          <p class="relative text-xl text-center">enter a session key</p>
+          <p class="relative text-lg text-center">enter a session key</p>
         </div>
 
         <div style="text-align:center;">
-          <InputText type="text" v-model="typingSessionKey" placeholder="session key" style="text-align:center;" @keyup.enter="setSessionKey" />
+          <InputText type="text" v-model="typingSessionKey" placeholder="session key" size="small" style="text-align:center;" @keyup.enter="setSessionKey" />
         
-          <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="setSessionKey" />
+          <Button size="small" type="submit" severity="info" label="Submit" @click="setSessionKey" />
         </div>
 
       </div>
@@ -922,22 +927,22 @@ export default {
       <div class="flexbox-item flexbox-item-6">
 
         <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-user" style="font-size: 2.5rem"></i>
+          <p style="display:inline-block;" class="relative text-2xl text-center">
+            <i class="pi pi-user" style="font-size: 2.0rem"></i>
             Person
           </p>
         </div>
 
         <div v-if="currentPerson">
-          <p style="font-weight: bold;" class="relative text-xl text-center text-blue-500">{{ currentPerson }}</p>
+          <p style="font-weight: bold;" class="relative text-lg text-center text-blue-500">{{ currentPerson }}</p>
         </div>
         <div v-else>
-          <p class="relative text-xl text-center">select a person</p>
+          <p class="relative text-lg text-center">select a person</p>
         </div>
 
 
         <div v-if="data_getPeople" style="text-align:center;">
-          <Select v-model="selectedPerson" :options="data_getPeople.data.people" placeholder="person" class="w-full md:w-56" filter @update:modelValue="setCurrentPerson(selectedPerson)"/>
+          <Select v-model="selectedPerson" :options="data_getPeople.data.people" placeholder="person" size="small" class="w-full md:w-56"  filter @update:modelValue="setCurrentPerson(selectedPerson)"/>
         </div>
 
       </div>
@@ -947,23 +952,23 @@ export default {
       <div class="flexbox-item flexbox-item-7">
 
         <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-ticket" style="font-size: 2.5rem"></i>
+          <p style="display:inline-block;" class="relative text-2xl text-center">
+            <i class="pi pi-ticket" style="font-size: 2.0rem"></i>
             Resource
           </p>
         </div>
 
 
         <div v-if="currentResource">
-          <p style="font-weight: bold;" class="relative text-xl text-center text-blue-500">{{ currentResource }}</p>
+          <p style="font-weight: bold;" class="relative text-lg text-center text-blue-500">{{ currentResource }}</p>
         </div>
         <div v-else>
-          <p class="relative text-xl text-center">select a resource</p>
+          <p class="relative text-lg text-center">select a resource</p>
         </div>
 
 
         <div v-if="data_getResources && sessionKey" style="text-align:center;">
-          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="resource" class="w-full md:w-56" filter @update:modelValue="setCurrentResource(currentResource)"/>
+          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="resource" size="small" class="w-full md:w-56" filter @update:modelValue="setCurrentResource(currentResource)"/>
         </div>
 
 
@@ -983,8 +988,8 @@ export default {
       <div class="flexbox-item flexbox-item-1">
 
         <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-building-columns" style="font-size: 2.5rem"></i>
+          <p style="display:inline-block;" class="relative text-2xl text-center">
+            <i class="pi pi-building-columns" style="font-size: 2.0rem"></i>
             Admin
           </p>
         </div>
@@ -993,15 +998,15 @@ export default {
 
         <div v-if="sessionKey" >
           <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-xl text-center">
+            <p style="display:inline-block;" class="relative text-lg text-center">
               create a new person
             </p>
           </div>
 
           <div style="text-align:center;">
-            <InputText type="text" v-model="createdPerson" placeholder="name" style="text-align:center;" />
+            <InputText type="text" v-model="createdPerson" placeholder="name" size="small" style="text-align:center;" />
 
-              <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" />
+              <Button size="small" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" />
           </div>
         </div>
 
@@ -1013,15 +1018,15 @@ export default {
 
         <div v-if="sessionKey" >
           <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-xl text-center">
+            <p style="display:inline-block;" class="relative text-lg text-center">
               create a new resource
             </p>
           </div>
 
           <div style="text-align:center;">
-            <InputText type="text" v-model="newResourceType" placeholder="resource" style="text-align:center;" />
+            <InputText type="text" v-model="newResourceType" placeholder="resource" size="small" style="text-align:center;" />
 
-            <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" />
+            <Button size="small" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" />
           </div>
         </div>
 
@@ -1032,20 +1037,20 @@ export default {
         <div v-if="currentPerson">
 
           <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-xl text-center">
+            <p style="display:inline-block;" class="relative text-lg text-center">
               deposit or withdraw money
             </p>
           </div>
 
 
           <div style="text-align:center;">
-            <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" />
+            <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" size="small" />
           </div>
 
           <div style="text-align:center;">
-            <InputNumber v-model="adminMoney" placeholder="amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" style="text-align:center;" />
+            <InputNumber v-model="adminMoney" placeholder="amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" style="text-align:center;" />
 
-            <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
+            <Button size="small" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
           </div>
 
         </div>
@@ -1059,19 +1064,19 @@ export default {
 
 
           <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-xl text-center">
+            <p style="display:inline-block;" class="relative text-lg text-center">
               deposit or withdraw resource
             </p>
           </div>
 
           <div style="text-align:center;">
-            <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" />
+            <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" size="small" />
           </div>
 
           <div style="text-align:center;">
-            <InputNumber v-model="adminResourceAmount" placeholder="quantity" inputId="integeronly" style="text-align:center;" />
+            <InputNumber v-model="adminResourceAmount" placeholder="quantity" inputId="integeronly" size="small" style="text-align:center;" />
 
-            <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
+            <Button size="small" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
           </div>
 
         </div>
@@ -1087,8 +1092,8 @@ export default {
       <div class="flexbox-item flexbox-item-2">
 
         <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-shop" style="font-size: 2.5rem"></i>
+          <p style="display:inline-block;" class="relative text-2xl text-center">
+            <i class="pi pi-shop" style="font-size: 2.0rem"></i>
             Sell
           </p>
         </div>
@@ -1115,19 +1120,19 @@ export default {
 
           <div style="text-align:center;">
 
-            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" style="text-align:center;" />
+            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" size="small" style="text-align:center;" />
 
-            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" style="text-align:center;" />
+            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" size="small" style="text-align:center;" />
 
 
-              <Button style="width: 100px;" type="submit" severity="info" label="Submit" @click="sell_now_or_sell_order()" />
+              <Button size="small" type="submit" severity="info" label="Submit" @click="sell_now_or_sell_order()" />
           </div>
 
 
           <br>
 
 
-          <p class="relative text-xl text-center">your sell orders</p>
+          <p class="relative text-lg text-center">your sell orders</p>
 
           <DataTable selectionMode="single" v-model:selection="selectedSaleForCancel" :value="currentPersonSales" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
             <Column field="quantity" header="Quantity"></Column>
@@ -1135,7 +1140,7 @@ export default {
           </DataTable>
 
           <div v-if="selectedSaleForCancel" >
-            <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
+            <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
           </div>
 
 
@@ -1154,8 +1159,8 @@ export default {
       <div class="flexbox-item flexbox-item-3">
 
         <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-3xl text-center">
-            <i class="pi pi-shopping-bag" style="font-size: 2.5rem"></i>
+          <p style="display:inline-block;" class="relative text-2xl text-center">
+            <i class="pi pi-shopping-bag" style="font-size: 2.0rem"></i>
             Buy
           </p>
         </div>
@@ -1168,10 +1173,10 @@ export default {
 
         <div v-if="data_getResources && sessionKey">
           <div v-if="currentResource">
-            <p style="font-weight: bold;" class="relative text-xl text-center">Resource: {{ currentResource }}</p>
+            <p style="font-weight: bold;" class="relative text-lg text-center">Resource: {{ currentResource }}</p>
           </div>
           <div v-else>
-            <p class="relative text-xl text-center">Select a resource</p>
+            <p class="relative text-lg text-center">Select a resource</p>
           </div>
         </div>
 
@@ -1183,10 +1188,10 @@ export default {
         <div v-if="currentResource && data_getSellOrdersForBuying">
 
           <div v-if="firstPrice">
-            <p class="relative text-xl text-center">Available: {{numAvailable}} &nbsp; &nbsp; &nbsp; Price: ${{firstPrice.toFixed(2)}}</p>
+            <p class="relative text-lg text-center">Available: {{numAvailable}} &nbsp; &nbsp; &nbsp; Price: ${{firstPrice.toFixed(2)}}</p>
           </div>
           <div v-else>
-            <p class="relative text-xl text-center">Available: {{numAvailable}}</p>
+            <p class="relative text-lg text-center">Available: {{numAvailable}}</p>
           </div>
 
           <div v-if="currentPerson">
@@ -1227,8 +1232,8 @@ export default {
 .flexbox-container-top {
   display: flex;
   justify-content: space-around;
-  height: 18vh;
-  min-height: 145px;
+  height: 16vh;
+  min-height: 130px;
 }
 
 .flexbox-container-bottom {
@@ -1240,7 +1245,7 @@ export default {
 .flexbox-container {
   display: flex;
   justify-content: space-around;
-  height: 82vh;
+  height: 84vh;
 }
 
 .flexbox-item {
