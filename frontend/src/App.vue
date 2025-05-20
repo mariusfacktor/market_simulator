@@ -999,14 +999,9 @@ export default {
 
 
         <div v-if="sessionKey" >
-          <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-lg text-center">
-              create a new person
-            </p>
-          </div>
 
           <div style="text-align:center;">
-            <InputText type="text" v-model="createdPerson" placeholder="name" size="small" style="text-align:center;" />
+            <InputText type="text" v-model="createdPerson" placeholder="new person name" size="small" style="text-align:center;" />
 
               <Button size="small" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" />
           </div>
@@ -1019,14 +1014,9 @@ export default {
 
 
         <div v-if="sessionKey" >
-          <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-lg text-center">
-              create a new resource
-            </p>
-          </div>
 
           <div style="text-align:center;">
-            <InputText type="text" v-model="newResourceType" placeholder="resource" size="small" style="text-align:center;" />
+            <InputText type="text" v-model="newResourceType" placeholder="new resource" size="small" style="text-align:center;" />
 
             <Button size="small" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" />
           </div>
@@ -1039,18 +1029,9 @@ export default {
         <div v-if="currentPerson">
 
           <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-lg text-center">
-              deposit or withdraw money
-            </p>
-          </div>
-
-
-          <div style="text-align:center;">
             <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" size="small" />
-          </div>
 
-          <div style="text-align:center;">
-            <InputNumber v-model="adminMoney" placeholder="amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" style="text-align:center;" />
+            <InputNumber v-model="adminMoney" placeholder="dollar amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" />
 
             <Button size="small" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
           </div>
@@ -1066,17 +1047,9 @@ export default {
 
 
           <div style="text-align:center;">
-            <p style="display:inline-block;" class="relative text-lg text-center">
-              deposit or withdraw resource
-            </p>
-          </div>
-
-          <div style="text-align:center;">
             <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" size="small" />
-          </div>
 
-          <div style="text-align:center;">
-            <InputNumber v-model="adminResourceAmount" placeholder="quantity" inputId="integeronly" size="small" style="text-align:center;" />
+            <InputNumber v-model="adminResourceAmount" placeholder="resource quantity" inputId="integeronly" size="small" />
 
             <Button size="small" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
           </div>
@@ -1259,6 +1232,8 @@ export default {
 
 .flexbox-item-1 {
   flex-grow: 1;
+  height: 38vh;
+  min-height: 310px;
 }
 
 .flexbox-item-2 {
