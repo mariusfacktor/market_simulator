@@ -895,7 +895,7 @@ export default {
 <template>
 
 
-  <div :style="{ backgroundColor: '#f0f2f5', width: '100vw' }">
+  <div :style="{ backgroundColor: '#f0f2f5' }">
 
 
 
@@ -987,74 +987,122 @@ export default {
 
 
     <div class="flexbox-container">
-      <div class="flexbox-item flexbox-item-1">
 
-        <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-2xl text-center">
-            <i class="pi pi-building-columns" style="font-size: 2.0rem"></i>
-            Admin
-          </p>
-        </div>
-        <br>
+      <div class="flexbox-item-colorless flexbox-item-1">
 
 
-        <div v-if="sessionKey" >
+
+
+
+        <div class="flexbox-item-sub flexbox-item-8">
 
           <div style="text-align:center;">
-            <InputText type="text" v-model="createdPerson" placeholder="new person name" size="small" style="text-align:center;" />
-
-              <Button size="small" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" />
+            <p style="display:inline-block;" class="relative text-2xl text-center">
+              <i class="pi pi-money-bill" style="font-size: 2.0rem"></i>
+              Assets
+            </p>
           </div>
+          <br>
+
+
+          <div v-if="money != null">
+            <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
+          </div>
+
+
+
+          <div v-if="data_getAssets">
+
+
+            <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="204px" tableStyle="min-width: 10rem" @row-select="setCurrentResource(selectedResource.type)" >
+              <Column field="type" header="Resource"></Column>
+              <Column field="quantity" header="Quantity"></Column>
+            </DataTable>
+
+          </div>
+
+          <br>
+
+
+
         </div>
 
-        <br>
 
 
 
 
 
-        <div v-if="sessionKey" >
+        <div class="flexbox-item-sub flexbox-item-9">
 
           <div style="text-align:center;">
-            <InputText type="text" v-model="newResourceType" placeholder="new resource" size="small" style="text-align:center;" />
-
-            <Button size="small" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" />
+            <p style="display:inline-block;" class="relative text-2xl text-center">
+              <i class="pi pi-building-columns" style="font-size: 2.0rem"></i>
+              Admin
+            </p>
           </div>
-        </div>
+          <br>
 
 
-        <br>
+          <div v-if="sessionKey" >
 
+            <div style="text-align:center;">
+              <InputText type="text" v-model="createdPerson" placeholder="new person name" size="small" style="text-align:center;" />
 
-        <div v-if="currentPerson">
-
-          <div style="text-align:center;">
-            <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" size="small" />
-
-            <InputNumber v-model="adminMoney" placeholder="dollar amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" />
-
-            <Button size="small" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
+                <Button size="small" type="submit" severity="info" label="Submit" @click="createPerson(createdPerson)" />
+            </div>
           </div>
 
-        </div>
+          <br>
 
+
+
+
+
+          <div v-if="sessionKey" >
+
+            <div style="text-align:center;">
+              <InputText type="text" v-model="newResourceType" placeholder="new resource" size="small" style="text-align:center;" />
+
+              <Button size="small" type="submit" severity="info" label="Submit" @click="newResource(newResourceType)" />
+            </div>
+          </div>
 
 
           <br>
 
 
-        <div v-if="currentPerson && currentResource">
+          <div v-if="currentPerson">
+
+            <div style="text-align:center;">
+              <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" size="small" />
+
+              <InputNumber v-model="adminMoney" placeholder="dollar amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" />
+
+              <Button size="small" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
+            </div>
+
+          </div>
 
 
-          <div style="text-align:center;">
-            <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" size="small" />
 
-            <InputNumber v-model="adminResourceAmount" placeholder="resource quantity" inputId="integeronly" size="small" />
+            <br>
 
-            <Button size="small" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
+
+          <div v-if="currentPerson && currentResource">
+
+
+            <div style="text-align:center;">
+              <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" size="small" />
+
+              <InputNumber v-model="adminResourceAmount" placeholder="resource quantity" inputId="integeronly" size="small" />
+
+              <Button size="small" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
+            </div>
+
           </div>
 
         </div>
+
 
       </div>
 
@@ -1075,18 +1123,6 @@ export default {
 
         <br>
 
-
-        <div v-if="data_getAssets">
-
-
-          <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="204px" tableStyle="min-width: 10rem" @row-select="setCurrentResource(selectedResource.type)" >
-            <Column field="type" header="Resource"></Column>
-            <Column field="quantity" header="Quantity"></Column>
-          </DataTable>
-
-        </div>
-
-        <br>
 
 
         <div v-if="currentPerson && currentResource">
@@ -1141,9 +1177,6 @@ export default {
         </div>
         <br>
 
-        <div v-if="money != null">
-          <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
-        </div>
 
 
         <div v-if="data_getResources && sessionKey">
@@ -1223,6 +1256,20 @@ export default {
   height: 84vh;
 }
 
+.flexbox-item-colorless {
+  width: 300px;
+  margin: 8px;
+  background-color: #f0f2f5;
+}
+
+.flexbox-item-sub {
+  width: 300px;
+  border: 3px solid #b4bed4;
+  background-color: #ffffff;
+  margin: 0px;
+  width: 100%;
+}
+
 .flexbox-item {
   width: 300px;
   margin: 8px;
@@ -1232,8 +1279,6 @@ export default {
 
 .flexbox-item-1 {
   flex-grow: 1;
-  height: 38vh;
-  min-height: 310px;
 }
 
 .flexbox-item-2 {
@@ -1258,6 +1303,22 @@ export default {
 
 .flexbox-item-7 {
   flex-grow: 1;
+}
+
+.flexbox-item-8 {
+  flex-grow: 1;
+
+  height: 48.8%;
+  min-height: 310px;
+}
+
+.flexbox-item-9 {
+  flex-grow: 1;
+
+  height: 48.8%;
+  min-height: 310px;
+
+  margin-top: 16px;
 }
 
 
