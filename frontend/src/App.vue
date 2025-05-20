@@ -141,7 +141,7 @@ export default {
       });
     },
 
-    async getSellOrders(resource_type, name=null) {
+    async getSellOrders(resource_type, name=null, b_quantity_available=false) {
       try {
 
         let url = this.addr + '/get_sell_orders'
@@ -149,17 +149,16 @@ export default {
         const headers = { 'Content-Type': 'application/json' };
         var params = {};
 
-        if (name === null) {
-          params = {  'session_key': this.sessionKey,
+        params = {  'session_key': this.sessionKey,
                       'resource_type': resource_type
-                    };
+                  };
+
+        if (name !== null) {
+          params['name'] = name;
         }
 
-        else {
-          params = {  'session_key': this.sessionKey,
-                      'resource_type': resource_type,
-                      'name': name
-                    };
+        if (b_quantity_available) {
+          params['b_quantity_available'] = true;
         }
 
         const response = await axios({
@@ -605,7 +604,7 @@ export default {
 
     async getSellOrdersForBuying(resource_type) {
 
-      await this.getSellOrders(resource_type);
+      await this.getSellOrders(resource_type, null, true);
 
       this.data_getSellOrdersForBuying = this.data_getSellOrders;
 

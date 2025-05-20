@@ -843,7 +843,7 @@ def get_assets(session_key, name):
 
 
 
-def get_sell_orders_toplevel(session_key, resource_type, name=None):
+def get_sell_orders_toplevel(session_key, resource_type, name=None, b_quantity_available=None):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
@@ -869,7 +869,7 @@ def get_sell_orders_toplevel(session_key, resource_type, name=None):
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    sell_list = get_sell_orders(session_id, resource_id, person_id, b_quantity_available=False)
+    sell_list = get_sell_orders(session_id, resource_id, person_id, b_quantity_available=b_quantity_available)
 
     b_success = True
     message = 'Success (market): returned selling data for %s' % resource_type
@@ -1243,13 +1243,17 @@ def api_get_sell_orders():
     if request.method == 'GET':
 
         name = None
+        b_quantity_available = None
 
         session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
         if 'name' in request.args:
             name = request.args.get('name')
+        if 'b_quantity_available' in request.args:
+            b_quantity_available = request.args.get('b_quantity_available')
 
-        b_success, message, sell_list = get_sell_orders_toplevel(session_key, resource_type, name)
+
+        b_success, message, sell_list = get_sell_orders_toplevel(session_key, resource_type, name, b_quantity_available)
 
         return_data = {
                         'resource_type': resource_type,
