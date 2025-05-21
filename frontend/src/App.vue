@@ -1445,8 +1445,9 @@ export default {
           <p class="relative text-lg text-center">your sell orders</p>
 
           <DataTable selectionMode="single" v-model:selection="selectedSellOrderForCancel" :value="currentPersonSellOrders" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
-            <Column field="quantity" header="Quantity"></Column>
             <Column field="price" header="Price"></Column>
+            <Column field="quantity" header="Quantity"></Column>
+            <Column field="quantity_available" header="Quantity Available"></Column>
           </DataTable>
 
           <div v-if="selectedSellOrderForCancel" >
@@ -1518,8 +1519,9 @@ export default {
             <p class="relative text-lg text-center">your buy orders</p>
 
             <DataTable selectionMode="single" v-model:selection="selectedBuyOrderForCancel" :value="currentPersonBuyOrders" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
-              <Column field="quantity" header="Quantity"></Column>
               <Column field="price" header="Price"></Column>
+              <Column field="quantity" header="Quantity"></Column>
+              <Column field="quantity_available" header="Quantity Available"></Column>
             </DataTable>
 
             <div v-if="selectedBuyOrderForCancel" >
