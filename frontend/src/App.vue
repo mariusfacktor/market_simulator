@@ -138,6 +138,7 @@ export default {
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
+    // setInterval(this.updateEverything, 1000);
   },
 
   methods: {
@@ -160,6 +161,50 @@ export default {
         duration: 3000,
       });
     },
+
+
+    async updateEverything() {
+
+      if (this.sessionKey) {
+
+        // Get list of resources
+        await this.getResources();
+
+        // Get list of people
+        await this.getPeople();
+
+
+        if (this.currentPerson) {
+
+          // Get money and resources for current person
+          await this.getAssets(this.currentPerson);
+
+
+          if (this.currentResource !== null) {
+            // Get updated sell orders
+            await this.getSellOrdersForPerson(this.currentResource);
+
+            // Get updated buy orders
+            await this.getBuyOrdersForPerson(this.currentResource);
+          }
+
+        }
+
+        if (this.currentResource !== null) {
+
+          // Get sell orders and price to buy
+          await this.getSellOrdersForBuying(this.currentResource);
+
+          // Get buy orders and price to sell
+          await this.getBuyOrdersForSelling(this.currentResource);
+        }
+
+
+
+      }
+
+    },
+
 
     async getOrders(resource_type, name=null, b_quantity_available=false, b_buy_orders=false) {
       try {
