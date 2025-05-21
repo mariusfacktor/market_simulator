@@ -123,6 +123,9 @@ session = Session_sqlalchemy()
 
 
 
+def string_to_bool(value):
+    return value.lower() == "true"
+
 
 def get_sell_orders(session_id, resource_id, person_id=None, b_quantity_available=True, limit=None):
 
@@ -597,9 +600,14 @@ def get_price_toplevel(session_key, resource_type, desired_quantity=1, b_sell_pr
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    # Get the number of items currently for sale for that resource
-    num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
-                          .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
+    if b_sell_price:
+        # Get the number of items currently for sale for that resource
+        num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
+                              .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
+    else:
+        # Get the number of items currently waiting to be bought for that resource
+        num_product = (session.query(func.coalesce(func.sum(BuyOrder.quantity_available), 0))
+                              .filter(BuyOrder.session_id == session_id, BuyOrder.resource_id == resource_id)).one()[0]
 
 
     if desired_quantity > num_product:
@@ -843,11 +851,11 @@ def get_assets(session_key, name):
 
 
 
-def get_sell_orders_toplevel(session_key, resource_type, name=None, b_quantity_available=None):
+def get_orders_toplevel(session_key, resource_type, name=None, b_quantity_available=None, b_buy_orders=None):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    sell_list = None
+    order_list = None
     person_id = None
 
     if name:
@@ -855,7 +863,7 @@ def get_sell_orders_toplevel(session_key, resource_type, name=None, b_quantity_a
             b_success = False
             message = 'Failure (market): %s does not exist' % name
 
-            return b_success, message, sell_list
+            return b_success, message, order_list
 
         person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
@@ -864,17 +872,22 @@ def get_sell_orders_toplevel(session_key, resource_type, name=None, b_quantity_a
         b_success = False
         message = 'Failure (market): resource type %s does not exist' % resource_type
 
-        return b_success, message, sell_list
+        return b_success, message, order_list
 
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    sell_list = get_sell_orders(session_id, resource_id, person_id, b_quantity_available=b_quantity_available)
+
+    if b_buy_orders:
+        order_list = get_buy_orders(session_id, resource_id, person_id, b_quantity_available=b_quantity_available)
+    else:
+        order_list = get_sell_orders(session_id, resource_id, person_id, b_quantity_available=b_quantity_available)
+
 
     b_success = True
-    message = 'Success (market): returned selling data for %s' % resource_type
+    message = 'Success (market): returned order data for %s' % resource_type
 
-    return b_success, message, sell_list
+    return b_success, message, order_list
 
 
 
@@ -1199,6 +1212,7 @@ def api_get_price():
             quantity = int(request.args.get('quantity'))
         if 'b_sell_price' in request.args:
             b_sell_price = request.args.get('b_sell_price')
+            b_sell_price = string_to_bool(b_sell_price)
 
 
         b_success, message, price = get_price_toplevel(session_key, resource_type, quantity, b_sell_price=b_sell_price)
@@ -1238,12 +1252,13 @@ def api_get_assets():
 
 
 
-@app.route('/get_sell_orders', methods=['GET'])
-def api_get_sell_orders():
+@app.route('/get_orders', methods=['GET'])
+def api_get_orders():
     if request.method == 'GET':
 
         name = None
         b_quantity_available = None
+        b_buy_orders = None
 
         session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
@@ -1251,9 +1266,13 @@ def api_get_sell_orders():
             name = request.args.get('name')
         if 'b_quantity_available' in request.args:
             b_quantity_available = request.args.get('b_quantity_available')
+            b_quantity_available = string_to_bool(b_quantity_available)
+        if 'b_buy_orders' in request.args:
+            b_buy_orders = request.args.get('b_buy_orders')
+            b_buy_orders = string_to_bool(b_buy_orders)
 
 
-        b_success, message, sell_list = get_sell_orders_toplevel(session_key, resource_type, name, b_quantity_available)
+        b_success, message, sell_list = get_orders_toplevel(session_key, resource_type, name, b_quantity_available, b_buy_orders)
 
         return_data = {
                         'resource_type': resource_type,

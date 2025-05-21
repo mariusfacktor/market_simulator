@@ -58,15 +58,23 @@ export default {
       // addr: 'https://market-sim.serverpit.com',
 
       data_getSellOrders: null,
-      data_getPrice: null,
+      data_getBuyOrders: null,
+
+      data_getPriceSell: null,
+      data_getPriceBuy: null,
+
+
       data_getAssets: null,
       data_getPeople: null,
       data_getResources: null,
 
       data_createPerson: null,
+
       data_sell: null,
       data_buy: null,
-      data_cancelSell: null,
+
+      data_cancelSellOrder: null,
+      data_cancelBuyOrder: null,
 
       error: null,
 
@@ -79,17 +87,29 @@ export default {
       sellQuantity: null,
       sellPrice: null,
 
-      currentPersonSales: null,
-      selectedSaleForCancel: null,
+      currentPersonSellOrders: null,
+      selectedSellOrderForCancel: null,
+
+      currentPersonBuyOrders: null,
+      selectedBuyOrderForCancel: null,
 
       currentResource: null,
       selectedSale: null,
       data_getSellOrdersForBuying: null,
+      data_getBuyOrdersForSelling: null,
 
       buyQuantity: null,
-      numAvailable: null,
-      pricePerUnit: null,
-      firstPrice: null,
+      buyPrice: null,
+
+      numAvailableToBuy: null,
+      numAvailableToSell: null,
+
+      pricePerUnitSell: null,
+      pricePerUnitBuy: null,
+
+      firstPriceSell: null,
+      firstPriceBuy: null,
+
 
       adminToggle: null,
       adminMoney: null,
@@ -141,17 +161,15 @@ export default {
       });
     },
 
-    async getSellOrders(resource_type, name=null, b_quantity_available=false) {
+    async getOrders(resource_type, name=null, b_quantity_available=false, b_buy_orders=false) {
       try {
 
-        let url = this.addr + '/get_sell_orders'
+        let url = this.addr + '/get_orders'
 
         const headers = { 'Content-Type': 'application/json' };
-        var params = {};
-
-        params = {  'session_key': this.sessionKey,
-                      'resource_type': resource_type
-                  };
+        var params = {  'session_key': this.sessionKey,
+                        'resource_type': resource_type
+                      };
 
         if (name !== null) {
           params['name'] = name;
@@ -161,6 +179,10 @@ export default {
           params['b_quantity_available'] = true;
         }
 
+        if (b_buy_orders) {
+          params['b_buy_orders'] = true;
+        }
+
         const response = await axios({
           method: 'get',
           url: url,
@@ -170,24 +192,40 @@ export default {
 
         console.log(response.data);
 
-        this.data_getSellOrders = response.data;
+        if (b_buy_orders) {
+          this.data_getBuyOrders = response.data;
+        }
+        else {
+          this.data_getSellOrders = response.data;
+        }
+
         this.error = null;
       } catch (err) {
         this.data_getSellOrders = null;
+        this.data_getBuyOrders = null;
         this.error = err.message;
       }
 
     },
 
-    async getPrice(resource_type, quantity) {
+    async getPrice(resource_type, quantity, b_sell_price=true) {
       try {
 
         let url = this.addr + '/get_price'
 
         const headers = { 'Content-Type': 'application/json' };
-        const params = { 'session_key': this.sessionKey,
+
+
+        var params = { 'session_key': this.sessionKey,
                          'resource_type': resource_type,
                          'quantity': quantity };
+
+        if (b_sell_price) {
+          params['b_sell_price'] = true;
+        }
+        else {
+          params['b_sell_price'] = false;
+        }
 
         const response = await axios({
           method: 'get',
@@ -198,14 +236,30 @@ export default {
 
         console.log(response.data);
 
-        this.data_getPrice = response.data;
+        if (b_sell_price) {
+          this.data_getPriceSell = response.data;
+
+          this.pricePerUnitSell = this.data_getPriceSell.data.price / quantity;
+          this.pricePerUnitSell = this.pricePerUnitSell.toFixed(2);
+        }
+        else {
+          this.data_getPriceBuy = response.data;
+
+          this.pricePerUnitBuy = this.data_getPriceBuy.data.price / quantity;
+          this.pricePerUnitBuy = this.pricePerUnitBuy.toFixed(2);
+        }
+
+
         this.error = null;
 
-        this.pricePerUnit = this.data_getPrice.data.price / quantity;
-        this.pricePerUnit = this.pricePerUnit.toFixed(2);
-
       } catch (err) {
-        this.data_getPrice = null;
+
+        this.data_getPriceSell = null;
+        this.pricePerUnitSell = null;
+
+        this.data_getPriceBuy = null;
+        this.pricePerUnitBuy = null;
+
         this.error = err.message;
       }
     },
@@ -344,6 +398,71 @@ export default {
 
     },
 
+
+    async buy_order(name, resource_type, quantity, price) {
+
+      if (name === null || resource_type === null || quantity === null || price === null) {
+
+        this.makeToast('Missing info', false);
+
+        return;
+      };
+
+      let response;
+
+      try {
+
+        let url = this.addr + '/buy_order'
+
+        const headers = { 'Content-Type': 'application/json' };
+
+        const body = { 'session_key': this.sessionKey,
+                       'name': name,
+                       'resource_type': resource_type,
+                       'quantity': quantity,
+                       'price': price };
+
+        response = await axios({
+          method: 'post',
+          url: url,
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        // get updated list of resources
+        await this.getAssets(name);
+
+        // get updated sell orders
+        await this.getSellOrdersForPerson(resource_type)
+
+        // get updated buy orders
+        await this.getBuyOrdersForPerson(resource_type)
+
+
+        // reset fields
+        this.buyQuantity = null;
+        this.buyPrice = null;
+
+        this.data_buy = response.data;
+        this.error = null;
+
+
+        await this.getSellOrdersForBuying(this.currentResource);
+        await this.getBuyOrdersForSelling(this.currentResource);
+
+      } catch (err) {
+        this.data_buy = null;
+        this.error = err.message;
+      }
+
+      this.makeToast(response.data.message, response.data.b_success);
+
+    },
+
+
+
     async sell_order(name, resource_type, quantity, price) {
 
       if (name === null || resource_type === null || quantity === null || price === null) {
@@ -382,6 +501,9 @@ export default {
         // get updated sell orders
         await this.getSellOrdersForPerson(resource_type)
 
+        // get updated buy orders
+        await this.getBuyOrdersForPerson(resource_type)
+
 
         // reset fields
         this.sellQuantity = null;
@@ -392,6 +514,7 @@ export default {
 
 
         await this.getSellOrdersForBuying(this.currentResource);
+        await this.getBuyOrdersForSelling(this.currentResource);
 
       } catch (err) {
         this.data_sell = null;
@@ -444,6 +567,9 @@ export default {
       // update sell orders for buying
       await this.getSellOrdersForBuying(resource_type);
 
+      // update buy orders for selling
+      await this.getBuyOrdersForSelling(resource_type);
+
       this.makeToast(response.data.message, response.data.b_success);
 
     },
@@ -473,10 +599,10 @@ export default {
 
         console.log(response.data);
 
-        this.data_buy = response.data;
+        this.data_sell = response.data;
         this.error = null;
       } catch (err) {
-        this.data_buy = null;
+        this.data_sell = null;
         this.error = err.message;
       }
 
@@ -490,6 +616,9 @@ export default {
 
       // update sell orders for buying
       await this.getSellOrdersForBuying(resource_type);
+
+      // update buy orders for selling
+      await this.getBuyOrdersForSelling(resource_type);
 
       this.makeToast(response.data.message, response.data.b_success);
 
@@ -515,6 +644,25 @@ export default {
     },
 
 
+    async buy_now_or_buy_order() {
+
+      if (this.currentPerson === null || this.currentResource === null || this.buyQuantity === null) {
+
+        this.makeToast('Missing info', false);
+
+        return;
+      }
+
+      if (this.buyPrice != null) {
+        await this.buy_order(this.currentPerson, this.currentResource, this.buyQuantity, this.buyPrice);
+      }
+      else {
+        await this.buy_now(this.currentPerson, this.currentResource, this.buyQuantity);
+      }
+
+    },
+
+
     async cancelSellOrder(sell_id) {
       try {
 
@@ -535,10 +683,10 @@ export default {
 
         console.log(response.data);
 
-        this.data_cancelSell = response.data;
+        this.data_cancelSellOrder = response.data;
         this.error = null;
       } catch (err) {
-        this.data_cancelSell = null;
+        this.data_cancelSellOrder = null;
         this.error = err.message;
       }
 
@@ -554,22 +702,76 @@ export default {
     },
 
 
+
+    async cancelBuyOrder(buy_id) {
+      try {
+
+        let url = this.addr + '/cancel_buy_order'
+
+        const headers = { 'Content-Type': 'application/json' };
+
+        const body = {  'session_key': this.sessionKey,
+                        'buy_id': buy_id 
+                      };
+
+        const response = await axios({
+          method: 'post',
+          url: url,
+          headers: headers,
+          data: body,
+        });
+
+        console.log(response.data);
+
+        this.data_cancelBuyOrder = response.data;
+        this.error = null;
+      } catch (err) {
+        this.data_cancelBuyOrder = null;
+        this.error = err.message;
+      }
+
+      // refresh assets
+      await this.getAssets(this.currentPerson);
+
+      // refresh buy orders
+      await this.getBuyOrdersForPerson(this.currentResource);
+
+      // update buy market
+      await this.getBuyOrdersForSelling(this.currentResource);
+
+    },
+
+
+
     async getSellOrdersForPerson(resource_type) {
 
-      // Set resource type
-      this.currentResource = resource_type;
-
-      await this.getSellOrders(resource_type, this.currentPerson);
+      await this.getOrders(resource_type, this.currentPerson);
 
       if (this.currentPerson) {
-        this.currentPersonSales = this.data_getSellOrders.data.sell_list;
+        this.currentPersonSellOrders = this.data_getSellOrders.data.sell_list;
       }
       else {
-        this.currentPersonSales = null;
+        this.currentPersonSellOrders = null;
       }
 
       // reset
-      this.selectedSaleForCancel = null;
+      this.selectedSellOrderForCancel = null;
+    },
+
+
+    async getBuyOrdersForPerson(resource_type) {
+
+      await this.getOrders(resource_type, this.currentPerson, false, true);
+
+      if (this.currentPerson) {
+        this.currentPersonBuyOrders = this.data_getBuyOrders.data.sell_list;
+      }
+      else {
+        this.currentPersonBuyOrders = null;
+      }
+
+      // reset
+      this.selectedBuyOrderForCancel = null;
     },
 
 
@@ -582,11 +784,13 @@ export default {
       if (this.currentResource !== null) {
         // get updated sell orders
         await this.getSellOrdersForPerson(this.currentResource)
+
+        // get updated buy orders
+        await this.getBuyOrdersForPerson(this.currentResource)
       }
 
       // reset
       this.selectedResource = null;
-      this.currentPersonSales = null;
 
     },
 
@@ -595,8 +799,14 @@ export default {
 
       if (this.currentPerson !== null) {
         // get updated sell orders
-        await this.getSellOrdersForPerson(resource_type)
+        await this.getSellOrdersForPerson(resource_type);
+
+        // get updated buy orders
+        await this.getBuyOrdersForPerson(this.currentResource)
       }
+
+      await this.getSellOrdersForBuying(resource_type);
+      await this.getBuyOrdersForSelling(resource_type);
 
       // reset
       if (this.selectedResource !== null) {
@@ -611,25 +821,54 @@ export default {
 
     async getSellOrdersForBuying(resource_type) {
 
-      await this.getSellOrders(resource_type, null, true);
+      await this.getOrders(resource_type, null, true);
 
       this.data_getSellOrdersForBuying = this.data_getSellOrders;
 
       // Add up all the quantities to get total number for sale
-      var num_available = 0;
+      var numAvailable = 0;
       for (let i = 0; i < this.data_getSellOrdersForBuying.data.sell_list.length; i++) {
-        num_available += this.data_getSellOrdersForBuying.data.sell_list[i].quantity_available;
+        numAvailable+= this.data_getSellOrdersForBuying.data.sell_list[i].quantity_available;
       }
 
       // Get first price
       if (this.data_getSellOrdersForBuying.data.sell_list.length > 0) {
-        this.firstPrice = this.data_getSellOrdersForBuying.data.sell_list[0].price;
+        this.firstPriceSell = this.data_getSellOrdersForBuying.data.sell_list[0].price;
       }
       else {
-        this.firstPrice = null;
+        this.firstPriceSell = null;
       }
 
-      this.numAvailable = num_available;
+      this.numAvailableToBuy = numAvailable;
+
+      // reset
+      this.buyQuantity = null;
+
+    },
+
+
+
+    async getBuyOrdersForSelling(resource_type) {
+
+      await this.getOrders(resource_type, null, true, true);
+
+      this.data_getBuyOrdersForSelling = this.data_getBuyOrders;
+
+      // Add up all the quantities to get total number for sale
+      var num_available = 0;
+      for (let i = 0; i < this.data_getBuyOrdersForSelling.data.sell_list.length; i++) {
+        num_available += this.data_getBuyOrdersForSelling.data.sell_list[i].quantity_available;
+      }
+
+      // Get first price
+      if (this.data_getBuyOrdersForSelling.data.sell_list.length > 0) {
+        this.firstPriceBuy = this.data_getBuyOrdersForSelling.data.sell_list[0].price;
+      }
+      else {
+        this.firstPriceBuy = null;
+      }
+
+      this.numAvailableToSell = num_available;
 
       // reset
       this.buyQuantity = null;
@@ -1025,6 +1264,38 @@ export default {
 
 
 
+          <div v-if="currentPerson">
+
+            <div style="text-align:center;">
+              <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" size="small" />
+
+              <InputNumber v-model="adminMoney" placeholder="dollar amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" />
+
+              <Button size="small" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
+            </div>
+
+          </div>
+
+
+
+            <br>
+
+
+          <div v-if="currentPerson && currentResource">
+
+
+            <div style="text-align:center;">
+              <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" size="small" />
+
+              <InputNumber v-model="adminResourceAmount" placeholder="resource quantity" inputId="integeronly" size="small" />
+
+              <Button size="small" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
+            </div>
+
+          </div>
+
+
+
         </div>
 
 
@@ -1067,40 +1338,6 @@ export default {
             </div>
           </div>
 
-
-          <br>
-
-
-          <div v-if="currentPerson">
-
-            <div style="text-align:center;">
-              <SelectButton v-model="adminDepositWithdraw" :options="['Deposit', 'Withdraw']" size="small" />
-
-              <InputNumber v-model="adminMoney" placeholder="dollar amount" inputId="currency-us" mode="currency" currency="USD" locale="en-US" size="small" />
-
-              <Button size="small" type="submit" severity="info" label="Submit" @click="depositOrWithdraw" />
-            </div>
-
-          </div>
-
-
-
-            <br>
-
-
-          <div v-if="currentPerson && currentResource">
-
-
-            <div style="text-align:center;">
-              <SelectButton v-model="adminDepositWithdrawResource" :options="['Deposit', 'Withdraw']" size="small" />
-
-              <InputNumber v-model="adminResourceAmount" placeholder="resource quantity" inputId="integeronly" size="small" />
-
-              <Button size="small" type="submit" severity="info" label="Submit" @click="giveOrTakeResource" />
-            </div>
-
-          </div>
-
         </div>
 
 
@@ -1128,10 +1365,18 @@ export default {
         <div v-if="currentPerson && currentResource">
 
 
+          <div v-if="firstPriceBuy">
+            <p class="relative text-lg text-center">Available: {{numAvailableToSell}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceBuy.toFixed(2)}}</p>
+          </div>
+          <div v-else>
+            <p class="relative text-lg text-center">Available: {{numAvailableToSell}}</p>
+          </div>
+
+
 
           <div style="text-align:center;">
 
-            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" size="small" style="text-align:center;" />
+            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, sellQuantity, false)" />
 
             <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" size="small" style="text-align:center;" />
 
@@ -1140,18 +1385,27 @@ export default {
           </div>
 
 
+          <div v-if="sellQuantity && data_getPriceBuy && data_getPriceBuy.data.price">
+            <p class="relative text-lg text-center">Total Price: &nbsp; ${{data_getPriceBuy.data.price.toFixed(2)}} &nbsp; &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnitBuy}}</p>
+          </div>
+          <div v-else>
+            <p class="relative text-lg text-center"><br></p>
+          </div>
+
+
+
           <br>
 
 
           <p class="relative text-lg text-center">your sell orders</p>
 
-          <DataTable selectionMode="single" v-model:selection="selectedSaleForCancel" :value="currentPersonSales" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
+          <DataTable selectionMode="single" v-model:selection="selectedSellOrderForCancel" :value="currentPersonSellOrders" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
             <Column field="quantity" header="Quantity"></Column>
             <Column field="price" header="Price"></Column>
           </DataTable>
 
-          <div v-if="selectedSaleForCancel" >
-            <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelSellOrder(selectedSaleForCancel.id)" rounded />
+          <div v-if="selectedSellOrderForCancel" >
+            <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelSellOrder(selectedSellOrderForCancel.id)" rounded />
           </div>
 
 
@@ -1179,41 +1433,56 @@ export default {
 
 
 
-        <div v-if="data_getResources && sessionKey">
-          <div v-if="currentResource">
-            <p style="font-weight: bold;" class="relative text-lg text-center">Resource: {{ currentResource }}</p>
-          </div>
-          <div v-else>
-            <p class="relative text-lg text-center">Select a resource</p>
-          </div>
-        </div>
-
-
-        <div v-if="data_getResources && sessionKey">
-          <Select v-model="currentResource" :options="data_getResources.data.resources" placeholder="Select resource" class="w-full md:w-56" filter @update:modelValue="getSellOrdersForBuying(currentResource)"/>
-        </div>
-
         <div v-if="currentResource && data_getSellOrdersForBuying">
 
-          <div v-if="firstPrice">
-            <p class="relative text-lg text-center">Available: {{numAvailable}} &nbsp; &nbsp; &nbsp; Price: ${{firstPrice.toFixed(2)}}</p>
+          <div v-if="firstPriceSell">
+            <p class="relative text-lg text-center">Available: {{numAvailableToBuy}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceSell.toFixed(2)}}</p>
           </div>
           <div v-else>
-            <p class="relative text-lg text-center">Available: {{numAvailable}}</p>
+            <p class="relative text-lg text-center">Available: {{numAvailableToBuy}}</p>
           </div>
+
 
           <div v-if="currentPerson">
 
-            <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="Buy quantity" fluid @update:modelValue="getPrice(currentResource, buyQuantity)" />
 
-            <div v-if="buyQuantity && data_getPrice && data_getPrice.data.price">
-              <span class="p-2 relative text-lg" >Total Price: &nbsp; ${{data_getPrice.data.price.toFixed(2)}} &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnit}}</span>
+            <div style="text-align:center;">
 
-              <div v-if="(money != null) && (money >= data_getPrice.data.price)">
-                <Button style="width: 100%;" type="submit" severity="info" label="Submit" @click="buy_now(currentPerson, currentResource, buyQuantity)" rounded />
-              </div>
+              <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="quantity" :model-value="buyQuantity" @input="(e) => (buyQuantity = e.value)" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, buyQuantity)" />
 
+              <InputNumber v-model="buyPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="buyPrice" @input="(e) => (buyPrice = e.value)" size="small" style="text-align:center;" />
+
+
+                <Button size="small" type="submit" severity="info" label="Submit" @click="buy_now_or_buy_order()" />
             </div>
+
+
+
+            <div v-if="buyQuantity && data_getPriceSell && data_getPriceSell.data.price">
+              <p class="relative text-lg text-center">Total Price: &nbsp; ${{data_getPriceSell.data.price.toFixed(2)}} &nbsp; &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnitSell}}</p>
+            </div>
+            <div v-else>
+              <p class="relative text-lg text-center"><br></p>
+            </div>
+
+
+
+            <br>
+
+
+            <p class="relative text-lg text-center">your buy orders</p>
+
+            <DataTable selectionMode="single" v-model:selection="selectedBuyOrderForCancel" :value="currentPersonBuyOrders" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
+              <Column field="quantity" header="Quantity"></Column>
+              <Column field="price" header="Price"></Column>
+            </DataTable>
+
+            <div v-if="selectedBuyOrderForCancel" >
+              <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelBuyOrder(selectedBuyOrderForCancel.id)" rounded />
+            </div>
+
+
+
 
           </div>
 
@@ -1308,15 +1577,15 @@ export default {
 .flexbox-item-8 {
   flex-grow: 1;
 
-  height: 48.8%;
-  min-height: 310px;
+  height: 65%;
+  min-height: 435px;
 }
 
 .flexbox-item-9 {
   flex-grow: 1;
 
-  height: 48.8%;
-  min-height: 310px;
+  height: 32.3%;
+  min-height: 170px;
 
   margin-top: 16px;
 }
