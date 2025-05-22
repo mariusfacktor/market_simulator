@@ -23,6 +23,7 @@ import Column from 'primevue/column';
 import SelectButton from 'primevue/selectbutton';
 import InputNumber from 'primevue/inputnumber';
 import ToggleSwitch from 'primevue/toggleswitch';
+import Tag from 'primevue/tag';
 
 // https://www.npmjs.com/package/vue-toast-notification
 import {useToast} from 'vue-toast-notification';
@@ -47,6 +48,7 @@ export default {
     SelectButton,
     InputNumber,
     ToggleSwitch,
+    Tag,
   },
 
   data() {
@@ -1113,6 +1115,27 @@ export default {
     },
 
 
+    chooseSeverityStatus(quantity, quantity_available) {
+
+      // success, warn, danger, info, primary, secondary, contrast
+
+      var return_str = ""
+
+      if (quantity_available == 0) {
+        return_str = "danger";
+      }
+      else if (quantity == quantity_available) {
+        return_str = "success";
+      }
+      else {
+        return_str = "warn";
+      }
+
+      return return_str;
+
+    },
+
+
 
     async debugFunc() {
       console.log('DEBUG A0')
@@ -1412,7 +1435,11 @@ export default {
               </template>
             </Column>
             <Column field="quantity" header="Quantity"></Column>
-            <Column field="quantity_available" header="Quantity Available"></Column>
+            <Column field="quantity_available" header="Quantity Available">
+              <template #body="slotProps">
+                <Tag :value="slotProps.data.quantity_available" :severity="chooseSeverityStatus(slotProps.data.quantity, slotProps.data.quantity_available)" />
+              </template>
+            </Column>
           </DataTable>
 
           <div v-if="selectedSellOrderForCancel" >
@@ -1490,7 +1517,11 @@ export default {
                 </template>
               </Column>
               <Column field="quantity" header="Quantity"></Column>
-              <Column field="quantity_available" header="Quantity Available"></Column>
+              <Column field="quantity_available" header="Quantity Available">
+                <template #body="slotProps">
+                  <Tag :value="slotProps.data.quantity_available" :severity="chooseSeverityStatus(slotProps.data.quantity, slotProps.data.quantity_available)" />
+              </template>
+              </Column>
             </DataTable>
 
             <div v-if="selectedBuyOrderForCancel" >
