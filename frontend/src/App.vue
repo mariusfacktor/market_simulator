@@ -141,7 +141,7 @@ export default {
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    // setInterval(this.updateEverything, 1000);
+    // setInterval(this.updateEverything, 1000); // refresh all data from backend (works with gunicorn but not flask directly)
   },
 
   methods: {
@@ -479,16 +479,6 @@ export default {
 
         console.log(response.data);
 
-        // get updated list of resources
-        await this.getAssets(name);
-
-        // get updated sell orders
-        await this.getSellOrdersForPerson(resource_type)
-
-        // get updated buy orders
-        await this.getBuyOrdersForPerson(resource_type)
-
-
         // reset fields
         this.buyQuantity = null;
         this.buyPrice = null;
@@ -497,8 +487,8 @@ export default {
         this.error = null;
 
 
-        await this.getSellOrdersForBuying(this.currentResource);
-        await this.getBuyOrdersForSelling(this.currentResource);
+        // update everything
+        await this.updateEverything();
 
       } catch (err) {
         this.data_buy = null;
@@ -543,15 +533,6 @@ export default {
 
         console.log(response.data);
 
-        // get updated list of resources
-        await this.getAssets(name);
-
-        // get updated sell orders
-        await this.getSellOrdersForPerson(resource_type)
-
-        // get updated buy orders
-        await this.getBuyOrdersForPerson(resource_type)
-
 
         // reset fields
         this.sellQuantity = null;
@@ -561,8 +542,8 @@ export default {
         this.error = null;
 
 
-        await this.getSellOrdersForBuying(this.currentResource);
-        await this.getBuyOrdersForSelling(this.currentResource);
+        // update everything
+        await this.updateEverything();
 
       } catch (err) {
         this.data_sell = null;
@@ -604,19 +585,12 @@ export default {
         this.error = err.message;
       }
 
-      // refresh assets
-      if (this.currentPerson) {
-        await this.getAssets(this.currentPerson);
-      }
 
       // reset
       this.buyQuantity = null;
 
-      // update sell orders for buying
-      await this.getSellOrdersForBuying(resource_type);
-
-      // update buy orders for selling
-      await this.getBuyOrdersForSelling(resource_type);
+      // update everything
+      await this.updateEverything();
 
       this.makeToast(response.data.message, response.data.b_success);
 
@@ -654,19 +628,11 @@ export default {
         this.error = err.message;
       }
 
-      // refresh assets
-      if (this.currentPerson) {
-        await this.getAssets(this.currentPerson);
-      }
-
       // reset
-      this.sellNowQuantity = null;
+      this.sellQuantity = null;
 
-      // update sell orders for buying
-      await this.getSellOrdersForBuying(resource_type);
-
-      // update buy orders for selling
-      await this.getBuyOrdersForSelling(resource_type);
+      // update everything
+      await this.updateEverything();
 
       this.makeToast(response.data.message, response.data.b_success);
 
@@ -738,14 +704,8 @@ export default {
         this.error = err.message;
       }
 
-      // refresh assets
-      await this.getAssets(this.currentPerson);
-
-      // refresh sell orders
-      await this.getSellOrdersForPerson(this.currentResource);
-
-      // update buy market
-      await this.getSellOrdersForBuying(this.currentResource);
+      // update everything
+      await this.updateEverything();
 
     },
 
@@ -778,14 +738,8 @@ export default {
         this.error = err.message;
       }
 
-      // refresh assets
-      await this.getAssets(this.currentPerson);
-
-      // refresh buy orders
-      await this.getBuyOrdersForPerson(this.currentResource);
-
-      // update buy market
-      await this.getBuyOrdersForSelling(this.currentResource);
+      // update everything
+      await this.updateEverything();
 
     },
 
@@ -973,8 +927,8 @@ export default {
         this.error = err.message;
       }
 
-      // update money
-      await this.getAssets(this.currentPerson);
+      // update everything
+      await this.updateEverything();
 
       this.makeToast(response.data.message, response.data.b_success);
 
@@ -1031,8 +985,8 @@ export default {
         this.error = err.message;
       }
 
-      // update person's resources
-      this.getAssets(this.currentPerson);
+      // update everything
+      await this.updateEverything();
 
       this.makeToast(response.data.message, response.data.b_success);
 
