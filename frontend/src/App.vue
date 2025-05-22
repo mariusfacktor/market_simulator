@@ -133,6 +133,9 @@ export default {
 
       data_sessionKey: null,
 
+      filters: {global: { value: null, matchMode: 'contains' }},
+
+
     };
   },
 
@@ -1289,16 +1292,20 @@ export default {
           <br>
 
 
-          <div v-if="money != null">
-            <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
-          </div>
-
 
 
           <div v-if="data_getAssets">
 
 
-            <DataTable selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="204px" tableStyle="min-width: 10rem" @row-select="setCurrentResource(selectedResource.type)" >
+            <DataTable v-model:filters="filters" selectionMode="single" v-model:selection="selectedResource" :value="data_getAssets.data.resource_list" size="small" scrollable scrollHeight="204px" tableStyle="min-width: 10rem" @row-select="setCurrentResource(selectedResource.type)" >
+
+              <template #header>
+                <span style="font-weight: bold;" class="p-2 relative text-lg" >Money: &nbsp; ${{money.toFixed(2)}}</span>
+                
+                <InputText v-model="filters['global'].value" placeholder="keyword search" size="small" />
+
+              </template>
+
               <Column field="type" header="Resource"></Column>
               <Column field="quantity" header="Quantity"></Column>
             </DataTable>
@@ -1624,14 +1631,14 @@ export default {
 .flexbox-item-8 {
   flex-grow: 1;
 
-  height: 65%;
-  min-height: 435px;
+  height: 70%;
+  min-height: 455px;
 }
 
 .flexbox-item-9 {
   flex-grow: 1;
 
-  height: 32.3%;
+  height: 27.6%;
   min-height: 170px;
 
   margin-top: 16px;
