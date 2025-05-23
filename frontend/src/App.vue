@@ -752,7 +752,7 @@ export default {
       await this.getOrders(resource_type, this.currentPerson);
 
       if (this.currentPerson) {
-        this.currentPersonSellOrders = this.data_getSellOrders.data.sell_list;
+        this.currentPersonSellOrders = this.data_getSellOrders.data.orders_list;
       }
       else {
         this.currentPersonSellOrders = null;
@@ -768,7 +768,7 @@ export default {
       await this.getOrders(resource_type, this.currentPerson, false, true);
 
       if (this.currentPerson) {
-        this.currentPersonBuyOrders = this.data_getBuyOrders.data.sell_list;
+        this.currentPersonBuyOrders = this.data_getBuyOrders.data.orders_list;
       }
       else {
         this.currentPersonBuyOrders = null;
@@ -831,13 +831,13 @@ export default {
 
       // Add up all the quantities to get total number for sale
       var numAvailable = 0;
-      for (let i = 0; i < this.data_getSellOrdersForBuying.data.sell_list.length; i++) {
-        numAvailable+= this.data_getSellOrdersForBuying.data.sell_list[i].quantity_available;
+      for (let i = 0; i < this.data_getSellOrdersForBuying.data.orders_list.length; i++) {
+        numAvailable+= this.data_getSellOrdersForBuying.data.orders_list[i].quantity_available;
       }
 
       // Get first price
-      if (this.data_getSellOrdersForBuying.data.sell_list.length > 0) {
-        this.firstPriceSell = this.data_getSellOrdersForBuying.data.sell_list[0].price;
+      if (this.data_getSellOrdersForBuying.data.orders_list.length > 0) {
+        this.firstPriceSell = this.data_getSellOrdersForBuying.data.orders_list[0].price;
       }
       else {
         this.firstPriceSell = null;
@@ -860,13 +860,13 @@ export default {
 
       // Add up all the quantities to get total number for sale
       var num_available = 0;
-      for (let i = 0; i < this.data_getBuyOrdersForSelling.data.sell_list.length; i++) {
-        num_available += this.data_getBuyOrdersForSelling.data.sell_list[i].quantity_available;
+      for (let i = 0; i < this.data_getBuyOrdersForSelling.data.orders_list.length; i++) {
+        num_available += this.data_getBuyOrdersForSelling.data.orders_list[i].quantity_available;
       }
 
       // Get first price
-      if (this.data_getBuyOrdersForSelling.data.sell_list.length > 0) {
-        this.firstPriceBuy = this.data_getBuyOrdersForSelling.data.sell_list[0].price;
+      if (this.data_getBuyOrdersForSelling.data.orders_list.length > 0) {
+        this.firstPriceBuy = this.data_getBuyOrdersForSelling.data.orders_list[0].price;
       }
       else {
         this.firstPriceBuy = null;
@@ -1405,9 +1405,9 @@ export default {
 
           <div style="text-align:center;">
 
-            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" @input="(e) => (sellQuantity = e.value)" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, sellQuantity, false)" />
+            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, sellQuantity, false)" />
 
-            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" @input="(e) => (sellPrice = e.value)" size="small" style="text-align:center;" />
+            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" size="small" style="text-align:center;" />
 
 
               <Button size="small" type="submit" severity="info" label="Submit" @click="sell_now_or_sell_order()" />
@@ -1486,9 +1486,9 @@ export default {
 
             <div style="text-align:center;">
 
-              <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="quantity" :model-value="buyQuantity" @input="(e) => (buyQuantity = e.value)" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, buyQuantity)" />
+              <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="quantity" :model-value="buyQuantity" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, buyQuantity)" />
 
-              <InputNumber v-model="buyPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="buyPrice" @input="(e) => (buyPrice = e.value)" size="small" style="text-align:center;" />
+              <InputNumber v-model="buyPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="buyPrice" size="small" style="text-align:center;" />
 
 
                 <Button size="small" type="submit" severity="info" label="Submit" @click="buy_now_or_buy_order()" />

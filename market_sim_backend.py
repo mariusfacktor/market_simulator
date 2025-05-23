@@ -1272,11 +1272,11 @@ def api_get_orders():
             b_buy_orders = string_to_bool(b_buy_orders)
 
 
-        b_success, message, sell_list = get_orders_toplevel(session_key, resource_type, name, b_quantity_available, b_buy_orders)
+        b_success, message, orders_list = get_orders_toplevel(session_key, resource_type, name, b_quantity_available, b_buy_orders)
 
         return_data = {
                         'resource_type': resource_type,
-                        'sell_list': sell_list
+                        'orders_list': orders_list
                         }
 
         response = {'message': message, 'data': return_data, 'b_success': b_success}
