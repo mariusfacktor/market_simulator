@@ -123,49 +123,64 @@ session = Session_sqlalchemy()
 
 
 
+def string_to_bool(value):
+    return value.lower() == "true"
 
-def get_sell_orders(session_id, resource_id, person_id=None):
 
-    # Optionally filter by person_id and if so, use quantity instead of quantity_available
+def get_sell_orders(session_id, resource_id, person_id=None, b_quantity_available=True, limit=None):
+
+
+    query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
+                        .join(Person, SellOrder.person_id == Person.id)
+                        .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id)
+                        .order_by(SellOrder.price, SellOrder.id))
+
+    if b_quantity_available:
+        query = query.filter(SellOrder.quantity_available > 0)
+    else:
+        query = query.filter(SellOrder.quantity > 0)
+
 
     if person_id:
-        # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-        query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
-                        .join(Person, SellOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id,
-                                SellOrder.quantity > 0, SellOrder.person_id == person_id)
-                        .order_by(SellOrder.price, SellOrder.id)).all()
+        query = query.filter(SellOrder.person_id == person_id)
 
-    else:
-        # sort by price (low to high) and then by sell_id (low to high) when prices are equal
-        query = (session.query(Person.name, SellOrder.id, SellOrder.person_id, SellOrder.quantity, SellOrder.quantity_available, SellOrder.price)
-                        .join(Person, SellOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, SellOrder.resource_id == resource_id, SellOrder.quantity_available > 0)
-                        .order_by(SellOrder.price, SellOrder.id)).all()
+
+    if limit:
+        query = query.limit(limit)
+
+
+    query = query.all()
+
 
     sell_list = [dict(x._mapping) for x in query]
 
     return sell_list
 
 
-def get_buy_orders(session_id, resource_id, person_id=None):
+def get_buy_orders(session_id, resource_id, person_id=None, b_quantity_available=True, limit=None):
 
-    # Optionally filter by person_id and if so, use quantity instead of quantity_available
+
+    query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
+                        .join(Person, BuyOrder.person_id == Person.id)
+                        .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id)
+                        .order_by(desc(BuyOrder.price), BuyOrder.id))
+
+
+    if b_quantity_available:
+        query = query.filter(BuyOrder.quantity_available > 0)
+    else:
+        query = query.filter(BuyOrder.quantity > 0)
+
 
     if person_id:
-        # sort by price (high to low) and then by buy_id (low to high) when prices are equal
-        query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
-                        .join(Person, BuyOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id,
-                                BuyOrder.quantity > 0, BuyOrder.person_id == person_id)
-                        .order_by(desc(BuyOrder.price), BuyOrder.id)).all()
+        query = query.filter(BuyOrder.person_id == person_id)
 
-    else:
-        # sort by price (high to low) and then by buy_id (low to high) when prices are equal
-        query = (session.query(Person.name, BuyOrder.id, BuyOrder.person_id, BuyOrder.quantity, BuyOrder.quantity_available, BuyOrder.price)
-                        .join(Person, BuyOrder.person_id == Person.id)
-                        .filter(Person.session_id == session_id, BuyOrder.resource_id == resource_id, BuyOrder.quantity_available > 0)
-                        .order_by(desc(BuyOrder.price), BuyOrder.id)).all()
+
+    if limit:
+        query = query.limit(limit)
+
+
+    query = query.all()
 
     buy_list = [dict(x._mapping) for x in query]
 
@@ -321,6 +336,8 @@ def give_or_take_product(session_id, person_id, resource_id, quantity):
 
     calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
+    # # Make transactions between existing orders if possible
+    # transact_buy_and_sell_orders(session_id, resource_id)
 
 
 def pay_or_charge_person(session_id, person_id, dollars):
@@ -336,6 +353,15 @@ def pay_or_charge_person(session_id, person_id, dollars):
     session.commit()
 
     calculate_quantity_available_for_buy_order(session_id, person_id)
+
+    # query = session.query(BuyOrder.resource_id).filter(BuyOrder.session_id == session_id,
+    #                                                    BuyOrder.person_id == person_id,
+    #                                                    BuyOrder.quantity_available > 0).all()
+    # resource_ids = list(set([x[0] for x in query]))
+
+    # for resource_id in resource_ids:
+    #     # Make transactions between existing orders if possible
+    #     transact_buy_and_sell_orders(session_id, resource_id)
 
 
 def process_transaction(session_id, resource_id, seller_id, buyer_id,
@@ -395,8 +421,8 @@ def transact_buy_and_sell_orders(session_id, resource_id):
 
     while not b_done:
 
-        sell_orders = get_sell_orders(session_id, resource_id)
-        buy_orders = get_buy_orders(session_id, resource_id)
+        sell_orders = get_sell_orders(session_id, resource_id, limit=1)
+        buy_orders = get_buy_orders(session_id, resource_id, limit=1)
 
 
         if not sell_orders or not buy_orders:
@@ -574,9 +600,14 @@ def get_price_toplevel(session_key, resource_type, desired_quantity=1, b_sell_pr
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    # Get the number of items currently for sale for that resource
-    num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
-                          .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
+    if b_sell_price:
+        # Get the number of items currently for sale for that resource
+        num_product = (session.query(func.coalesce(func.sum(SellOrder.quantity_available), 0))
+                              .filter(SellOrder.session_id == session_id, SellOrder.resource_id == resource_id)).one()[0]
+    else:
+        # Get the number of items currently waiting to be bought for that resource
+        num_product = (session.query(func.coalesce(func.sum(BuyOrder.quantity_available), 0))
+                              .filter(BuyOrder.session_id == session_id, BuyOrder.resource_id == resource_id)).one()[0]
 
 
     if desired_quantity > num_product:
@@ -707,6 +738,15 @@ def sell_now(session_key, name, resource_type, quantity):
     resource_id = session.query(Resource).filter(Resource.session_id == session_id,
                                                  Resource.type == resource_type).one().id
 
+    if not session.query(PersonResource).filter(PersonResource.session_id == session_id, 
+                                                PersonResource.person_id == person_id, 
+                                                PersonResource.resource_id == resource_id).all():
+        b_success = False
+        message = 'Failure (sell now): %s has no %s' % (name, resource_type)
+
+        return b_success, message
+
+
     seller_quantity = (session.query(PersonResource.quantity)
                               .filter(PersonResource.session_id == session_id,
                                       PersonResource.person_id == person_id,
@@ -795,7 +835,9 @@ def get_assets(session_key, name):
 
     # Get resources from person name and sort by resource type
     query = (session.query(Resource.type, PersonResource.quantity).join(Resource, PersonResource.resource_id == Resource.id)
-                    .filter(PersonResource.session_id == session_id, PersonResource.person_id == person_id)
+                    .filter(PersonResource.session_id == session_id, 
+                            PersonResource.person_id == person_id, 
+                            PersonResource.quantity > 0)
                     .order_by(Resource.type)).all()
 
     resource_list = [dict(x._mapping) for x in query]
@@ -809,11 +851,11 @@ def get_assets(session_key, name):
 
 
 
-def get_sell_orders_toplevel(session_key, resource_type, name=None):
+def get_orders_toplevel(session_key, resource_type, name=None, b_quantity_available=None, b_buy_orders=None):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
-    sell_list = None
+    order_list = None
     person_id = None
 
     if name:
@@ -821,7 +863,7 @@ def get_sell_orders_toplevel(session_key, resource_type, name=None):
             b_success = False
             message = 'Failure (market): %s does not exist' % name
 
-            return b_success, message, sell_list
+            return b_success, message, order_list
 
         person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
 
@@ -830,17 +872,22 @@ def get_sell_orders_toplevel(session_key, resource_type, name=None):
         b_success = False
         message = 'Failure (market): resource type %s does not exist' % resource_type
 
-        return b_success, message, sell_list
+        return b_success, message, order_list
 
 
     resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
 
-    sell_list = get_sell_orders(session_id, resource_id, person_id)
+
+    if b_buy_orders:
+        order_list = get_buy_orders(session_id, resource_id, person_id, b_quantity_available=b_quantity_available)
+    else:
+        order_list = get_sell_orders(session_id, resource_id, person_id, b_quantity_available=b_quantity_available)
+
 
     b_success = True
-    message = 'Success (market): returned selling data for %s' % resource_type
+    message = 'Success (market): returned order data for %s' % resource_type
 
-    return b_success, message, sell_list
+    return b_success, message, order_list
 
 
 
@@ -957,9 +1004,19 @@ def give_or_take_resource(session_key, name, resource_type, b_deposit, quantity)
 
     if not b_deposit:
 
+        # check that person has resource
+        if not session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                                    PersonResource.person_id == person_id,
+                                                    PersonResource.resource_id == resource_id
+                                                    ).all():
+            b_success = False
+            message = 'Failure (give): %s has no %s to withdraw' %(name, resource_type)
+            return b_success, message
+
+
         # withdraw
-        available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id, 
-                                                                  PersonResource.person_id == person_id, 
+        available_quantity = session.query(PersonResource).filter(PersonResource.session_id == session_id,
+                                                                  PersonResource.person_id == person_id,
                                                                   PersonResource.resource_id == resource_id).one().quantity
 
         if available_quantity < quantity:
@@ -1044,7 +1101,7 @@ def api_create_person():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1068,7 +1125,7 @@ def api_sell_order():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1091,7 +1148,7 @@ def api_buy_order():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1113,7 +1170,7 @@ def api_buy_now():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1135,7 +1192,7 @@ def api_sell_now():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1155,6 +1212,7 @@ def api_get_price():
             quantity = int(request.args.get('quantity'))
         if 'b_sell_price' in request.args:
             b_sell_price = request.args.get('b_sell_price')
+            b_sell_price = string_to_bool(b_sell_price)
 
 
         b_success, message, price = get_price_toplevel(session_key, resource_type, quantity, b_sell_price=b_sell_price)
@@ -1164,7 +1222,7 @@ def api_get_price():
                         'price': price
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1186,7 +1244,7 @@ def api_get_assets():
                         'resource_list': resource_list
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1194,25 +1252,34 @@ def api_get_assets():
 
 
 
-@app.route('/get_sell_orders', methods=['GET'])
-def api_get_sell_orders():
+@app.route('/get_orders', methods=['GET'])
+def api_get_orders():
     if request.method == 'GET':
 
         name = None
+        b_quantity_available = None
+        b_buy_orders = None
 
         session_key = request.args.get('session_key')
         resource_type = request.args.get('resource_type')
         if 'name' in request.args:
             name = request.args.get('name')
+        if 'b_quantity_available' in request.args:
+            b_quantity_available = request.args.get('b_quantity_available')
+            b_quantity_available = string_to_bool(b_quantity_available)
+        if 'b_buy_orders' in request.args:
+            b_buy_orders = request.args.get('b_buy_orders')
+            b_buy_orders = string_to_bool(b_buy_orders)
 
-        b_success, message, sell_list = get_sell_orders_toplevel(session_key, resource_type, name)
+
+        b_success, message, orders_list = get_orders_toplevel(session_key, resource_type, name, b_quantity_available, b_buy_orders)
 
         return_data = {
                         'resource_type': resource_type,
-                        'sell_list': sell_list
+                        'orders_list': orders_list
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1230,7 +1297,7 @@ def api_get_people():
                         'people': person_list
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1249,7 +1316,7 @@ def api_get_resources():
                         }
 
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1271,7 +1338,7 @@ def api_cancel_sell_order():
                         'sell_id': sell_id
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1294,7 +1361,7 @@ def api_cancel_buy_order():
                         'buy_id': buy_id
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1317,7 +1384,7 @@ def api_deposit_or_withdraw():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1340,7 +1407,7 @@ def api_give_or_take_resource():
                         'name': name
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1360,7 +1427,7 @@ def api_new_resource():
                         'resource_type': resource_type
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405
@@ -1379,7 +1446,7 @@ def api_create_session():
                         'session_key': session_key
                         }
 
-        response = {'message': message, 'data': return_data}
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
         return jsonify(response), 201  # Return a JSON response with status code 201
     else:
         return 'Method not allowed', 405

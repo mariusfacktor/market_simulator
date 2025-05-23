@@ -8,11 +8,11 @@ This is a web application that lets users buy and sell resources in a market.
 Access the web app with this site <br>
 https://mariusfacktor.github.io/market_simulator/
 
-1) Type in a Session key at the top. This creates a new session with that unique key or joins an existing one. 
-2) In the left box, create a new person or select an existing person. 
-3) Enable admin mode to create a new resource. You can also deposit or withdraw resources or money. 
-4) In the center box you can see your person's resources and sell them. When you sell a resource it will be placed on the market as a listing, and you can cancel this listing if you want to. 
-5) In the right box you can buy resources. The market simply sorts the sale listings by the lowest price. 
+1) In the Session panel, type in a session key. This creates a new session or joins an existing one. 
+2) In the Admin panel, create new people and new resources. 
+3) Select a person and resource using Person and Resource panels.
+4) The Assets panel shows the money and resources of the selected person. 
+5) The Sell and Buy panels lets the selected person sell or buy the selected resource. Leave the price box blank to immediately sell or buy at market price, or pick your own price to create a limit order that will queue on the market. 
 
 <div float="left">
     <img src="./images/example.png" alt="example" height="400">
@@ -32,7 +32,7 @@ Postman for testing HTTP API calls <br>
 Gunicorn <br>
 Nginx <br>
 Google Cloud VM to host the backend server <br>
-Duck DNS to map the VM's external IP address to a domain name <br>
+freedns.afraid.org to map the VM's external IP address to a domain name <br>
 Let's Encrypt to create an SSL Certificate <br>
 
 <ins>Frontend</ins>
