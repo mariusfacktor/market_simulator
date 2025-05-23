@@ -24,6 +24,7 @@ import SelectButton from 'primevue/selectbutton';
 import InputNumber from 'primevue/inputnumber';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Tag from 'primevue/tag';
+import Chart from 'primevue/chart';
 
 // https://www.npmjs.com/package/vue-toast-notification
 import {useToast} from 'vue-toast-notification';
@@ -49,6 +50,7 @@ export default {
     InputNumber,
     ToggleSwitch,
     Tag,
+    Chart,
   },
 
   data() {
@@ -137,6 +139,56 @@ export default {
 
       filters: {global: { value: null, matchMode: 'contains' }},
 
+      data_supply_demand: { labels: [],
+                           datasets: [
+                            { label: 'supply',
+                              data: [],
+                              fill: false,
+                              borderColor: '#238bad',
+                              tension: 0.0,
+                            },
+
+                            { label: 'demand',
+                              data: [],
+                              fill: false,
+                              borderColor: '#e65d45',
+                              tension: 0.0,
+
+                            },
+                           ]
+                          },
+
+
+      chartOptions: {
+        responsive: true,
+
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: false,
+            text: 'supply and demand'
+          }
+        },
+
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'quantity'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'price'
+            }
+          }
+        }
+
+      },
+
 
     };
   },
@@ -165,6 +217,88 @@ export default {
         position: 'bottom-right',
         duration: 3000,
       });
+    },
+
+
+    calculate_supply_and_demand_graph() {
+
+      let max_quantity = Math.max(this.numAvailableToBuy, this.numAvailableToSell);
+
+
+      // Supply
+      let supply_running_quantity = 0;
+
+      let supply_price_list = [];
+      let supply_quantity_list = [];
+
+      for (let i = 0; i < this.data_getSellOrdersForBuying.data.orders_list.length; i++) {
+        let supply_curr_price = this.data_getSellOrdersForBuying.data.orders_list[i].price;
+        supply_running_quantity += this.data_getSellOrdersForBuying.data.orders_list[i].quantity_available;
+
+        supply_price_list.push(supply_curr_price);
+        supply_quantity_list.push(supply_running_quantity);
+      }
+
+
+
+      // Demand
+      let demand_running_quantity = 0;
+
+      let demand_price_list = [];
+      let demand_quantity_list = [];
+
+      for (let i = 0; i < this.data_getBuyOrdersForSelling.data.orders_list.length; i++) {
+        let demand_curr_price = this.data_getBuyOrdersForSelling.data.orders_list[i].price;
+        demand_running_quantity += this.data_getBuyOrdersForSelling.data.orders_list[i].quantity_available;
+
+        demand_price_list.push(demand_curr_price);
+        demand_quantity_list.push(demand_running_quantity);
+
+      }
+
+
+      let graph_quantity_list = [];
+      let graph_supply_price_list = [];
+      let graph_demand_price_list = [];
+
+      let prev_supply_price = 0;
+      let prev_demand_price = this.firstPriceBuy;
+
+      for (let i = 0; i < max_quantity + 1; i++) {
+        graph_quantity_list.push(i);
+
+        let supply_idx = supply_quantity_list.indexOf(i);
+        let demand_idx = demand_quantity_list.indexOf(i);
+
+        if (supply_idx !== -1) {
+          graph_supply_price_list.push(supply_price_list[supply_idx]);
+          prev_supply_price = supply_price_list[supply_idx];
+        }
+        else {
+          graph_supply_price_list.push(prev_supply_price)
+        }
+
+        if (demand_idx !== -1) {
+          graph_demand_price_list.push(demand_price_list[demand_idx]);
+
+          if (demand_idx == demand_quantity_list.length - 1) {
+            // end of list
+            prev_demand_price = 0;
+          }
+          else {
+            prev_demand_price = demand_price_list[demand_idx];
+          }
+        }
+        else {
+          graph_demand_price_list.push(prev_demand_price);
+        }
+
+      }
+
+      this.data_supply_demand['labels'] = graph_quantity_list;
+      this.data_supply_demand['datasets'][0]['data'] = graph_supply_price_list;
+      this.data_supply_demand['datasets'][1]['data'] = graph_demand_price_list;
+
     },
 
 
@@ -202,6 +336,8 @@ export default {
 
           // Get buy orders and price to sell
           await this.getBuyOrdersForSelling(this.currentResource);
+
+          this.calculate_supply_and_demand_graph();
         }
 
 
@@ -819,6 +955,8 @@ export default {
         }
       }
 
+      this.calculate_supply_and_demand_graph();
+
     },
 
 
@@ -832,7 +970,7 @@ export default {
       // Add up all the quantities to get total number for sale
       var numAvailable = 0;
       for (let i = 0; i < this.data_getSellOrdersForBuying.data.orders_list.length; i++) {
-        numAvailable+= this.data_getSellOrdersForBuying.data.orders_list[i].quantity_available;
+        numAvailable += this.data_getSellOrdersForBuying.data.orders_list[i].quantity_available;
       }
 
       // Get first price
@@ -1389,18 +1527,16 @@ export default {
 
         <br>
 
-
-
-        <div v-if="currentPerson && currentResource">
-
-
-          <div v-if="firstPriceBuy">
+        <div v-if="firstPriceBuy">
             <p class="relative text-lg text-center">Available: {{numAvailableToSell}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceBuy.toFixed(2)}}</p>
           </div>
           <div v-else>
             <p class="relative text-lg text-center">Available: {{numAvailableToSell}}</p>
           </div>
 
+
+
+        <div v-if="currentPerson && currentResource">
 
 
           <div style="text-align:center;">
@@ -1428,7 +1564,7 @@ export default {
 
           <p class="relative text-lg text-center">your sell orders</p>
 
-          <DataTable selectionMode="single" v-model:selection="selectedSellOrderForCancel" :value="currentPersonSellOrders" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
+          <DataTable selectionMode="single" v-model:selection="selectedSellOrderForCancel" :value="currentPersonSellOrders" size="small" scrollable scrollHeight="190px" tableStyle="min-width: 10rem" >
             <Column field="price" header="Price">
               <template #body="slotProps">
                 <span>${{ slotProps.data.price.toFixed(2) }}</span>
@@ -1447,6 +1583,12 @@ export default {
           </div>
 
 
+        </div>
+
+        <br>
+
+        <div v-if="currentResource && data_getSellOrdersForBuying && data_getBuyOrdersForSelling">
+          <Chart type="line" :data="data_supply_demand" :options="chartOptions" />
         </div>
 
       </div>
@@ -1510,7 +1652,7 @@ export default {
 
             <p class="relative text-lg text-center">your buy orders</p>
 
-            <DataTable selectionMode="single" v-model:selection="selectedBuyOrderForCancel" :value="currentPersonBuyOrders" size="small" scrollable scrollHeight="164px" tableStyle="min-width: 10rem" >
+            <DataTable selectionMode="single" v-model:selection="selectedBuyOrderForCancel" :value="currentPersonBuyOrders" size="small" scrollable scrollHeight="190px" tableStyle="min-width: 10rem" >
               <Column field="price" header="Price">
                 <template #body="slotProps">
                   <span>${{ slotProps.data.price.toFixed(2) }}</span>
@@ -1527,7 +1669,6 @@ export default {
             <div v-if="selectedBuyOrderForCancel" >
               <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelBuyOrder(selectedBuyOrderForCancel.id)" rounded />
             </div>
-
 
 
 
