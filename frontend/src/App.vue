@@ -1515,83 +1515,98 @@ export default {
 
 
 
+      <div class="flexbox-item-colorless flexbox-item-2">
 
-      <div class="flexbox-item flexbox-item-2">
+        <div class="flexbox-item-sub flexbox-item-10">
 
-        <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-2xl text-center">
-            <i class="pi pi-shop" style="font-size: 2.0rem"></i>
-            Sell
-          </p>
+          <div style="text-align:center;">
+            <p style="display:inline-block;" class="relative text-2xl text-center">
+              <i class="pi pi-shop" style="font-size: 2.0rem"></i>
+              Sell
+            </p>
+          </div>
+
+
+          <div v-if="currentResource && data_getBuyOrdersForSelling">
+            <div v-if="firstPriceBuy">
+                <p class="relative text-lg text-center">Available: {{numAvailableToSell}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceBuy.toFixed(2)}}</p>
+            </div>
+            <div v-else>
+              <p class="relative text-lg text-center">Available: {{numAvailableToSell}}</p>
+            </div>
+          </div>
+
+
+
+          <div v-if="currentPerson && currentResource">
+
+
+            <div style="text-align:center;">
+
+              <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, sellQuantity, false)" />
+
+              <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" size="small" style="text-align:center;" />
+
+
+                <Button size="small" type="submit" severity="info" label="Submit" @click="sell_now_or_sell_order()" />
+            </div>
+
+
+            <div v-if="sellQuantity && data_getPriceBuy && data_getPriceBuy.data.price">
+              <p class="relative text-lg text-center">Total Price: &nbsp; ${{data_getPriceBuy.data.price.toFixed(2)}} &nbsp; &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnitBuy}}</p>
+            </div>
+            <div v-else>
+              <p class="relative text-lg text-center"><br></p>
+            </div>
+
+
+
+
+            <p class="relative text-lg text-center">your sell orders</p>
+
+            <DataTable selectionMode="single" v-model:selection="selectedSellOrderForCancel" :value="currentPersonSellOrders" size="small" scrollable scrollHeight="190px" tableStyle="min-width: 10rem" >
+              <Column field="price" header="Price">
+                <template #body="slotProps">
+                  <span>${{ slotProps.data.price.toFixed(2) }}</span>
+                </template>
+              </Column>
+              <Column field="quantity" header="Quantity"></Column>
+              <Column field="quantity_available" header="Quantity Available">
+                <template #body="slotProps">
+                  <Tag :value="slotProps.data.quantity_available" :severity="chooseSeverityStatus(slotProps.data.quantity, slotProps.data.quantity_available)" />
+                </template>
+              </Column>
+            </DataTable>
+
+            <div v-if="selectedSellOrderForCancel" >
+              <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelSellOrder(selectedSellOrderForCancel.id)" rounded />
+            </div>
+
+
+          </div>
+
         </div>
 
-        <br>
-
-        <div v-if="currentResource && data_getBuyOrdersForSelling">
-          <div v-if="firstPriceBuy">
-              <p class="relative text-lg text-center">Available: {{numAvailableToSell}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceBuy.toFixed(2)}}</p>
-          </div>
-          <div v-else>
-            <p class="relative text-lg text-center">Available: {{numAvailableToSell}}</p>
-          </div>
-        </div>
 
 
-
-        <div v-if="currentPerson && currentResource">
+        <div class="flexbox-item-sub flexbox-item-11">
 
 
           <div style="text-align:center;">
-
-            <InputNumber v-model="sellQuantity" inputId="integeronly" placeholder="quantity" :model-value="sellQuantity" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, sellQuantity, false)" />
-
-            <InputNumber v-model="sellPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="sellPrice" size="small" style="text-align:center;" />
-
-
-              <Button size="small" type="submit" severity="info" label="Submit" @click="sell_now_or_sell_order()" />
+            <p style="display:inline-block;" class="relative text-2xl text-center">
+              <i class="pi pi-chart-line" style="font-size: 2.0rem"></i>
+              Market
+            </p>
           </div>
 
 
-          <div v-if="sellQuantity && data_getPriceBuy && data_getPriceBuy.data.price">
-            <p class="relative text-lg text-center">Total Price: &nbsp; ${{data_getPriceBuy.data.price.toFixed(2)}} &nbsp; &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnitBuy}}</p>
+          <div v-if="currentResource && data_getSellOrdersForBuying && data_getBuyOrdersForSelling">
+            <Chart type="line" :data="data_supply_demand" :options="chartOptions" />
           </div>
-          <div v-else>
-            <p class="relative text-lg text-center"><br></p>
-          </div>
-
-
-
-          <br>
-
-
-          <p class="relative text-lg text-center">your sell orders</p>
-
-          <DataTable selectionMode="single" v-model:selection="selectedSellOrderForCancel" :value="currentPersonSellOrders" size="small" scrollable scrollHeight="190px" tableStyle="min-width: 10rem" >
-            <Column field="price" header="Price">
-              <template #body="slotProps">
-                <span>${{ slotProps.data.price.toFixed(2) }}</span>
-              </template>
-            </Column>
-            <Column field="quantity" header="Quantity"></Column>
-            <Column field="quantity_available" header="Quantity Available">
-              <template #body="slotProps">
-                <Tag :value="slotProps.data.quantity_available" :severity="chooseSeverityStatus(slotProps.data.quantity, slotProps.data.quantity_available)" />
-              </template>
-            </Column>
-          </DataTable>
-
-          <div v-if="selectedSellOrderForCancel" >
-            <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelSellOrder(selectedSellOrderForCancel.id)" rounded />
-          </div>
-
 
         </div>
 
-        <br>
 
-        <div v-if="currentResource && data_getSellOrdersForBuying && data_getBuyOrdersForSelling">
-          <Chart type="line" :data="data_supply_demand" :options="chartOptions" />
-        </div>
 
       </div>
 
@@ -1603,79 +1618,79 @@ export default {
 
 
 
-      <div class="flexbox-item flexbox-item-3">
+      <div class="flexbox-item-colorless flexbox-item-3">
 
-        <div style="text-align:center;">
-          <p style="display:inline-block;" class="relative text-2xl text-center">
-            <i class="pi pi-shopping-bag" style="font-size: 2.0rem"></i>
-            Buy
-          </p>
-        </div>
-        <br>
+        <div class="flexbox-item-sub flexbox-item-12">
 
-
-
-        <div v-if="currentResource && data_getSellOrdersForBuying">
-
-          <div v-if="firstPriceSell">
-            <p class="relative text-lg text-center">Available: {{numAvailableToBuy}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceSell.toFixed(2)}}</p>
-          </div>
-          <div v-else>
-            <p class="relative text-lg text-center">Available: {{numAvailableToBuy}}</p>
+          <div style="text-align:center;">
+            <p style="display:inline-block;" class="relative text-2xl text-center">
+              <i class="pi pi-shopping-bag" style="font-size: 2.0rem"></i>
+              Buy
+            </p>
           </div>
 
 
-          <div v-if="currentPerson">
+          <div v-if="currentResource && data_getSellOrdersForBuying">
 
-
-            <div style="text-align:center;">
-
-              <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="quantity" :model-value="buyQuantity" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, buyQuantity)" />
-
-              <InputNumber v-model="buyPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="buyPrice" size="small" style="text-align:center;" />
-
-
-                <Button size="small" type="submit" severity="info" label="Submit" @click="buy_now_or_buy_order()" />
-            </div>
-
-
-
-            <div v-if="buyQuantity && data_getPriceSell && data_getPriceSell.data.price">
-              <p class="relative text-lg text-center">Total Price: &nbsp; ${{data_getPriceSell.data.price.toFixed(2)}} &nbsp; &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnitSell}}</p>
+            <div v-if="firstPriceSell">
+              <p class="relative text-lg text-center">Available: {{numAvailableToBuy}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceSell.toFixed(2)}}</p>
             </div>
             <div v-else>
-              <p class="relative text-lg text-center"><br></p>
+              <p class="relative text-lg text-center">Available: {{numAvailableToBuy}}</p>
             </div>
 
 
+            <div v-if="currentPerson">
 
-            <br>
+
+              <div style="text-align:center;">
+
+                <InputNumber v-model="buyQuantity" inputId="integeronly" placeholder="quantity" :model-value="buyQuantity" size="small" style="text-align:center;" @update:modelValue="getPrice(currentResource, buyQuantity)" />
+
+                <InputNumber v-model="buyPrice" inputId="price_input" mode="currency" currency="USD" placeholder="price (optional)" :model-value="buyPrice" size="small" style="text-align:center;" />
 
 
-            <p class="relative text-lg text-center">your buy orders</p>
+                  <Button size="small" type="submit" severity="info" label="Submit" @click="buy_now_or_buy_order()" />
+              </div>
 
-            <DataTable selectionMode="single" v-model:selection="selectedBuyOrderForCancel" :value="currentPersonBuyOrders" size="small" scrollable scrollHeight="190px" tableStyle="min-width: 10rem" >
-              <Column field="price" header="Price">
-                <template #body="slotProps">
-                  <span>${{ slotProps.data.price.toFixed(2) }}</span>
+
+
+              <div v-if="buyQuantity && data_getPriceSell && data_getPriceSell.data.price">
+                <p class="relative text-lg text-center">Total Price: &nbsp; ${{data_getPriceSell.data.price.toFixed(2)}} &nbsp; &nbsp; &nbsp; Unit Price &nbsp; ${{pricePerUnitSell}}</p>
+              </div>
+              <div v-else>
+                <p class="relative text-lg text-center"><br></p>
+              </div>
+
+
+
+
+              <p class="relative text-lg text-center">your buy orders</p>
+
+              <DataTable selectionMode="single" v-model:selection="selectedBuyOrderForCancel" :value="currentPersonBuyOrders" size="small" scrollable scrollHeight="190px" tableStyle="min-width: 10rem" >
+                <Column field="price" header="Price">
+                  <template #body="slotProps">
+                    <span>${{ slotProps.data.price.toFixed(2) }}</span>
+                  </template>
+                </Column>
+                <Column field="quantity" header="Quantity"></Column>
+                <Column field="quantity_available" header="Quantity Available">
+                  <template #body="slotProps">
+                    <Tag :value="slotProps.data.quantity_available" :severity="chooseSeverityStatus(slotProps.data.quantity, slotProps.data.quantity_available)" />
                 </template>
-              </Column>
-              <Column field="quantity" header="Quantity"></Column>
-              <Column field="quantity_available" header="Quantity Available">
-                <template #body="slotProps">
-                  <Tag :value="slotProps.data.quantity_available" :severity="chooseSeverityStatus(slotProps.data.quantity, slotProps.data.quantity_available)" />
-              </template>
-              </Column>
-            </DataTable>
+                </Column>
+              </DataTable>
 
-            <div v-if="selectedBuyOrderForCancel" >
-              <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelBuyOrder(selectedBuyOrderForCancel.id)" rounded />
+              <div v-if="selectedBuyOrderForCancel" >
+                <Button style="width: 100%;" type="submit" severity="info" label="cancel listing" size="small" @click="cancelBuyOrder(selectedBuyOrderForCancel.id)" rounded />
+              </div>
+
+
+
             </div>
-
 
 
           </div>
-
 
         </div>
 
@@ -1778,6 +1793,34 @@ export default {
   min-height: 170px;
 
   margin-top: 16px;
+}
+
+
+
+.flexbox-item-10 {
+  flex-grow: 1;
+
+  height: 55%;
+  min-height: 365px;
+}
+
+.flexbox-item-11 {
+  flex-grow: 1;
+
+  height: 42.6%;
+  min-height: 270px;
+
+  margin-top: 16px;
+}
+
+
+
+
+.flexbox-item-12 {
+  flex-grow: 1;
+
+  height: 55%;
+  min-height: 365px;
 }
 
 
