@@ -21,7 +21,7 @@ names = ['Martin Tubins', 'Ryan Loaf', 'Andrew Harrington', 'Alicia Kind', 'Zara
 # resources = ['apple', 'orange', 'tomato']
 resources = ['apple', 'orange', 'tomato', 'coconut', 'banana', 'mango']
 
-session_key = 'debug'
+session_key = 'example' # 'debug'
 
 
 def create_session():
@@ -52,10 +52,10 @@ def create_person(name=None):
 def sell_order(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 30)
+    quantity = random.randint(1, 20)
 
-    # price = random.randint(1, 15)
-    price = round(0.01 + (14.99 * random.random()), 2)
+    price = round(0.29 + (8.99 * random.random()), 2)
+
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
 
@@ -66,10 +66,10 @@ def sell_order(name):
 def buy_order(name):
 
     resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 10)
+    quantity = random.randint(1, 15)
 
-    # price = random.randint(1, 15)
-    price = round(0.01 + (14.99 * random.random()), 2)
+    price = round(0.29 + (8.99 * random.random()), 2)
+
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
 
