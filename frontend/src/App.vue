@@ -56,10 +56,10 @@ export default {
   data() {
     return {
 
-      // addr: 'http://127.0.0.1' + ':' + '8000',
+      addr: 'http://127.0.0.1' + ':' + '8000',
       // addr: 'http://34.82.55.106' + ':' + '8000',
       // addr: 'https://market-sim.duckdns.org',
-      addr: 'https://market-sim.serverpit.com',
+      // addr: 'https://market-sim.serverpit.com',
 
       data_getSellOrders: null,
       data_getBuyOrders: null,
@@ -849,6 +849,9 @@ export default {
       // update everything
       await this.updateEverything();
 
+      // reset
+      this.selectedSellOrderForCancel = null;
+
     },
 
 
@@ -883,6 +886,9 @@ export default {
       // update everything
       await this.updateEverything();
 
+      // reset
+      this.selectedBuyOrderForCancel = null;
+
     },
 
 
@@ -898,8 +904,6 @@ export default {
         this.currentPersonSellOrders = null;
       }
 
-      // reset
-      this.selectedSellOrderForCancel = null;
     },
 
 
@@ -914,8 +918,6 @@ export default {
         this.currentPersonBuyOrders = null;
       }
 
-      // reset
-      this.selectedBuyOrderForCancel = null;
     },
 
 
@@ -935,6 +937,8 @@ export default {
 
       // reset
       this.selectedResource = null;
+      this.selectedSellOrderForCancel = null;
+      this.selectedBuyOrderForCancel = null;
 
     },
 
@@ -958,6 +962,10 @@ export default {
           this.selectedResource = null;
         }
       }
+
+      // reset
+      this.selectedSellOrderForCancel = null;
+      this.selectedBuyOrderForCancel = null;
 
       this.calculate_supply_and_demand_graph();
 
@@ -1174,6 +1182,10 @@ export default {
       // reset
       this.newResourceType = null;
 
+      // reset
+      this.selectedSellOrderForCancel = null;
+      this.selectedBuyOrderForCancel = null;
+
       // update
       await this.getResources();
 
@@ -1200,6 +1212,8 @@ export default {
         this.selectedResource = null;
         this.adminToggle = null;
         this.selectedPerson = '';
+        this.selectedSellOrderForCancel = null;
+        this.selectedBuyOrderForCancel = null;
 
         this.makeToast('Missing info', false);
 
