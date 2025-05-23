@@ -12,7 +12,7 @@ https://mariusfacktor.github.io/market_simulator/
 2) In the Admin panel, create new people and new resources. 
 3) Select a person and resource using Person and Resource panels.
 4) The Assets panel shows the money and resources of the selected person. 
-5) The Sell and Buy panels lets you sell or buy resources. Leave the price box blank to sell or buy immediately at market price, or pick your own price to create a limit order that will queue on the market. 
+5) The Sell and Buy panels lets the selected person sell or buy the selected resource. Leave the price box blank to immediately sell or buy at market price, or pick your own price to create a limit order that will queue on the market. 
 
 <div float="left">
     <img src="./images/example.png" alt="example" height="400">
