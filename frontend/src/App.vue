@@ -987,8 +987,6 @@ export default {
 
       this.numAvailableToBuy = numAvailable;
 
-      // reset
-      this.buyQuantity = null;
 
     },
 
@@ -1016,8 +1014,6 @@ export default {
 
       this.numAvailableToSell = num_available;
 
-      // reset
-      this.buyQuantity = null;
 
     },
 
