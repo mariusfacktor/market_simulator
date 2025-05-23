@@ -185,7 +185,11 @@ export default {
               text: 'price'
             }
           }
-        }
+        },
+
+        animation: {
+          duration: 0 // No animation = no jumping
+        },
 
       },
 
@@ -195,7 +199,7 @@ export default {
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    // setInterval(this.updateEverything, 1000); // refresh all data from backend (works with gunicorn but not flask directly)
+    setInterval(this.updateEverything, 1000); // refresh all data from backend (works with gunicorn but not flask directly)
   },
 
   methods: {
@@ -1527,12 +1531,14 @@ export default {
 
         <br>
 
-        <div v-if="firstPriceBuy">
-            <p class="relative text-lg text-center">Available: {{numAvailableToSell}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceBuy.toFixed(2)}}</p>
+        <div v-if="currentResource && data_getBuyOrdersForSelling">
+          <div v-if="firstPriceBuy">
+              <p class="relative text-lg text-center">Available: {{numAvailableToSell}} &nbsp; &nbsp; &nbsp; Price: ${{firstPriceBuy.toFixed(2)}}</p>
           </div>
           <div v-else>
             <p class="relative text-lg text-center">Available: {{numAvailableToSell}}</p>
           </div>
+        </div>
 
 
 
