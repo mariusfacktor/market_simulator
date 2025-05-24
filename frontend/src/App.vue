@@ -581,6 +581,9 @@ export default {
       // set currentPerson
       this.setCurrentPerson(name);
 
+      // reset
+      this.createdPerson = '';
+
       // Update
       this.getPeople();
 

@@ -208,7 +208,7 @@ def create_person(session_key, name, cash, resource_dict):
     session.add(new_person)
     session.commit()
 
-    person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+    person_id = new_person.id
 
     # Add new resources to resource table
     for resource_type, resource_quantity in resource_dict.items():
@@ -232,7 +232,7 @@ def create_person(session_key, name, cash, resource_dict):
     message = 'Success (person): %s created' %name
 
 
-    return b_success, message
+    return b_success, message, person_id
 
 
 
@@ -494,6 +494,8 @@ def sell_order(session_key, name, resource_type, quantity, price):
     session.add(new_sell_order)
     session.commit()
 
+    sell_order_id = new_sell_order.id
+
     # Calculate quantity_available for each sell_order ordered by price (low to high)
     calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
@@ -504,7 +506,7 @@ def sell_order(session_key, name, resource_type, quantity, price):
     message = 'Success (sell order): %s makes sell order of %d %s for price %.2f' % (name, quantity, resource_type, price)
 
 
-    return b_success, message
+    return b_success, message, sell_order_id
 
 
 
@@ -539,6 +541,8 @@ def buy_order(session_key, name, resource_type, quantity, price):
     session.add(new_buy_order)
     session.commit()
 
+    buy_order_id = new_buy_order.id
+
     # Calculate quantity_available for each sell_order ordered by price (high to low)
     calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
 
@@ -549,7 +553,7 @@ def buy_order(session_key, name, resource_type, quantity, price):
     message = 'Success (buy order): %s makes buy order of %d %s for price %.2f' % (name, quantity, resource_type, price)
 
 
-    return b_success, message
+    return b_success, message, buy_order_id
 
 
 
@@ -1051,11 +1055,13 @@ def new_resource(session_key, resource_type):
     session.add(new_resource)
     session.commit()
 
+    resource_id = new_resource.id
+
     b_success = True
     message = 'Success (new_resource): %s added to resource table' %resource_type
 
 
-    return b_success, message
+    return b_success, message, resource_id
 
 
 
@@ -1072,10 +1078,12 @@ def create_session(session_key):
     session.add(new_session)
     session.commit()
 
+    session_id = new_session.id
+
     b_success = True
     message = 'Success (session): session key %s created' %session_key
 
-    return b_success, message
+    return b_success, message, session_id
 
 
 
@@ -1095,10 +1103,11 @@ def api_create_person():
         cash = data['cash']
         resource_dict = data['resource_dict']
 
-        b_success, message = create_person(session_key, name, cash, resource_dict)
+        b_success, message, person_id = create_person(session_key, name, cash, resource_dict)
 
         return_data = {
-                        'name': name
+                        'name': name,
+                        'person_id': person_id
                         }
 
         response = {'message': message, 'data': return_data, 'b_success': b_success}
@@ -1119,10 +1128,11 @@ def api_sell_order():
         quantity = data['quantity']
         price = data['price']
 
-        b_success, message = sell_order(session_key, name, resource_type, quantity, price)
+        b_success, message, order_id = sell_order(session_key, name, resource_type, quantity, price)
 
         return_data = {
-                        'name': name
+                        'name': name,
+                        'order_id': order_id,
                         }
 
         response = {'message': message, 'data': return_data, 'b_success': b_success}
@@ -1142,10 +1152,11 @@ def api_buy_order():
         quantity = data['quantity']
         price = data['price']
 
-        b_success, message = buy_order(session_key, name, resource_type, quantity, price)
+        b_success, message, order_id = buy_order(session_key, name, resource_type, quantity, price)
 
         return_data = {
-                        'name': name
+                        'name': name,
+                        'order_id': order_id
                         }
 
         response = {'message': message, 'data': return_data, 'b_success': b_success}
@@ -1421,10 +1432,11 @@ def api_new_resource():
         session_key = data['session_key']
         resource_type = data['resource_type']
 
-        b_success, message = new_resource(session_key, resource_type)
+        b_success, message, resource_id = new_resource(session_key, resource_type)
 
         return_data = {
-                        'resource_type': resource_type
+                        'resource_type': resource_type,
+                        'resource_id': resource_id
                         }
 
         response = {'message': message, 'data': return_data, 'b_success': b_success}
@@ -1440,10 +1452,11 @@ def api_create_session():
 
         session_key = data['session_key']
 
-        b_success, message = create_session(session_key)
+        b_success, message, session_id = create_session(session_key)
 
         return_data = {
-                        'session_key': session_key
+                        'session_key': session_key,
+                        'session_id': session_id
                         }
 
         response = {'message': message, 'data': return_data, 'b_success': b_success}
