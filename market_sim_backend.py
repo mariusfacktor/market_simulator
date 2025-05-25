@@ -198,10 +198,12 @@ def create_person(session_key, name, cash, resource_dict):
 
     # Check if person already exists in person table
     if session.query(Person).filter(Person.session_id == session_id, Person.name == name).all():
+        person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
+
         b_success = False
         message = 'Failure (person): %s already exists' % name
 
-        return b_success, message
+        return b_success, message, person_id
 
 
     new_person = Person(session_id=session_id, name=name, cash=cash)
@@ -472,14 +474,14 @@ def sell_order(session_key, name, resource_type, quantity, price):
         b_success = False
         message = 'Failure (sell order): %s does not exist' % name
 
-        return b_success, message
+        return b_success, message, -1
 
 
     if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         b_success = False
         message = 'Failure (sell order): resource %s does not exist' % resource_type
 
-        return b_success, message
+        return b_success, message, -1
 
 
 
@@ -520,14 +522,14 @@ def buy_order(session_key, name, resource_type, quantity, price):
         b_success = False
         message = 'Failure (buy order): %s does not exist' % name
 
-        return b_success, message
+        return b_success, message, -1
 
 
     if not session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
         b_success = False
         message = 'Failure (buy order): resource %s does not exist' % resource_type
 
-        return b_success, message
+        return b_success, message, -1
 
 
     person_id = session.query(Person).filter(Person.session_id == session_id, Person.name == name).one().id
@@ -710,6 +712,9 @@ def buy_now(session_key, name, resource_type, quantity):
         sell_idx += 1
 
 
+    # Make transactions between existing orders if possible
+    transact_buy_and_sell_orders(session_id, resource_id)
+
     b_success = True
     message = 'Success (buy now): %s buys %d %s for cost %.2f' % (name, quantity, resource_type, running_cost)
 
@@ -804,6 +809,10 @@ def sell_now(session_key, name, resource_type, quantity):
                             sell_order_id=None, buy_order_id=curr_buy_order_id)
 
         buy_idx += 1
+
+
+    # Make transactions between existing orders if possible
+    transact_buy_and_sell_orders(session_id, resource_id)
 
 
     b_success = True
@@ -1045,10 +1054,12 @@ def new_resource(session_key, resource_type):
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
     if session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).all():
+        resource_id = session.query(Resource).filter(Resource.session_id == session_id, Resource.type == resource_type).one().id
+
         b_success = False
         message = 'Failure (new_resource): %s already exists in resource table' %resource_type
 
-        return b_success, message
+        return b_success, message, resource_id
 
 
     new_resource = Resource(session_id=session_id, type=resource_type)
@@ -1068,10 +1079,12 @@ def new_resource(session_key, resource_type):
 def create_session(session_key):
 
     if session.query(Session).filter(Session.session_key == session_key).all():
+        session_id = session.query(Session).filter(Session.session_key == session_key).one().id
+
         b_success = True
         message = 'Success (session): session key %s already exists' %session_key
 
-        return b_success, message
+        return b_success, message, session_id
 
 
     new_session = Session(session_key=session_key)
