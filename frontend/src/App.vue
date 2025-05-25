@@ -98,7 +98,6 @@ export default {
       selectedBuyOrderForCancel: null,
 
       currentResource: null,
-      selectedSale: null,
       data_getSellOrdersForBuying: null,
       data_getBuyOrdersForSelling: null,
 
@@ -115,20 +114,16 @@ export default {
       firstPriceBuy: null,
 
 
-      adminToggle: null,
       adminMoney: null,
       adminDepositWithdraw: null,
 
       adminDepositWithdrawResponse: null,
 
-      adminSelectMoneyOrResorce: null,
-      adminSelectedResource: null,
       adminResourceAmount: null,
       adminDepositWithdrawResource: null,
       adminGiveOrTakeResourceResponse: null,
 
       newResourceData: null,
-      selectButtonResource: null,
 
       newResourceType: null,
 
@@ -1213,7 +1208,6 @@ export default {
         this.currentResource = null;
         this.data_getResources = null;
         this.selectedResource = null;
-        this.adminToggle = null;
         this.selectedPerson = '';
         this.selectedSellOrderForCancel = null;
         this.selectedBuyOrderForCancel = null;
@@ -1257,7 +1251,6 @@ export default {
       this.currentResource = null;
       this.data_getResources = null;
       this.selectedResource = null;
-      this.adminToggle = null;
 
       // Get list of resources
       await this.getResources();
