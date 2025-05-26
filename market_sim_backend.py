@@ -1072,6 +1072,17 @@ def deposit_or_withdraw(session_key, name, b_deposit, dollars, person_id=None):
 
     pay_or_charge_person(session_id, person_id, dollars)
 
+
+    query = session.query(BuyOrder.resource_id).filter(BuyOrder.session_id == session_id,
+                                                       BuyOrder.person_id == person_id,
+                                                       BuyOrder.quantity_available > 0).all()
+    resource_ids = list(set([x[0] for x in query]))
+
+    for resource_id in resource_ids:
+        # Make transactions between existing orders if possible
+        transact_buy_and_sell_orders(session_id, resource_id)
+
+
     action_str = 'deposit' if b_deposit else 'withdraw'
 
     b_success = True
@@ -1130,6 +1141,9 @@ def give_or_take_resource(session_key, name, resource_type, b_deposit, quantity,
         quantity = -1 * quantity
 
     give_or_take_product(session_id, person_id, resource_id, quantity)
+
+    # Make transactions between existing orders if possible
+    transact_buy_and_sell_orders(session_id, resource_id)
 
     action_str = 'deposit' if b_deposit else 'withdraw'
 
