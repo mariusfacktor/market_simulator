@@ -56,10 +56,10 @@ export default {
   data() {
     return {
 
-      // addr: 'http://127.0.0.1' + ':' + '8000',
+      addr: 'http://127.0.0.1' + ':' + '8000',
       // addr: 'http://34.82.55.106' + ':' + '8000',
       // addr: 'https://market-sim.duckdns.org',
-      addr: 'https://market-sim.serverpit.com',
+      // addr: 'https://market-sim.serverpit.com',
 
       data_getSellOrders: null,
       data_getBuyOrders: null,
@@ -194,7 +194,7 @@ export default {
 
   mounted() {
     document.title = 'Market Simulator'; // set site title
-    setInterval(this.updateEverything, 1000); // refresh all data from backend (works with gunicorn but not flask directly)
+    // setInterval(this.updateEverything, 1000); // refresh all data from backend (works with gunicorn but not flask directly)
   },
 
   methods: {
