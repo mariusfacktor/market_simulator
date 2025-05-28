@@ -138,29 +138,46 @@ def buy_market_order(session_key, name, resource_type, quantity):
 
 
 
+def get_ask_price(session_key, resource_type, quantity=1):
+    # the lowest a seller is willing to accept
 
-def buy(name):
+    params = {'session_key': session_key, 'resource_type': resource_type, 'quantity': quantity, 'b_sell_price': True}
 
-    resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 15)
+    try:
+        response = requests.get(url + 'get_price', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
 
-    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
+    b_success = response.json()['b_success']
 
-    response = requests.post(url + 'buy_now', json=data)
-    print(response.json())
+    if b_success:
+        price = response.json()['data']['price']
+    else:
+        price = None
 
-
-def sell(name):
-
-    resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 15)
-
-    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
-
-    response = requests.post(url + 'sell_now', json=data)
-    print(response.json())
+    return price
 
 
+
+
+def get_bid_price(session_key, resource_type, quantity=1):
+    # the highest a buyer is willing to pay
+    
+    params = {'session_key': session_key, 'resource_type': resource_type, 'quantity': quantity, 'b_sell_price': False}
+
+    try:
+        response = requests.get(url + 'get_price', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        price = response.json()['data']['price']
+    else:
+        price = None
+
+    return price
 
 
 
@@ -182,9 +199,9 @@ def main():
     order_id = sell_limit_order(session_key=session_key, name=nameA, resource_type=resourceA, quantity=8, price=2.50)
     b_success = buy_market_order(session_key=session_key, name=nameB, resource_type=resourceA, quantity=3)
 
-    print(b_success)
+    ask_price = get_ask_price(session_key=session_key, resource_type=resourceA, quantity=3)
 
-
+    bid_price = get_bid_price(session_key=session_key, resource_type=resourceA, quantity=1)
 
 
 
