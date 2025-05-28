@@ -51,6 +51,28 @@ def create_person(session_key, name, money, resource_dict={}):
     return person_id
 
 
+
+def create_resource(session_key, resource_type):
+
+    data = {'session_key': session_key, 'resource_type': resource_type}
+
+    try:
+        response = requests.post(url + 'new_resource', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        resource_id = response.json()['data']['resource_id']
+    else:
+        resource_id = None
+
+    return resource_id
+
+
+
+
 def sell_limit_order(session_key, name, resource_type, quantity, price):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
@@ -181,6 +203,95 @@ def get_bid_price(session_key, resource_type, quantity=1):
 
 
 
+
+def deposit(session_key, name, money):
+
+    data = {'session_key': session_key, 'name': name, 'dollars': money, 'b_deposit': True}
+
+
+    try:
+        response = requests.post(url + 'deposit_or_withdraw', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        return_val = b_success
+    else:
+        return_val = None
+
+    return return_val
+
+
+def withdraw(session_key, name, money):
+
+    data = {'session_key': session_key, 'name': name, 'dollars': money, 'b_deposit': False}
+
+
+    try:
+        response = requests.post(url + 'deposit_or_withdraw', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        return_val = b_success
+    else:
+        return_val = None
+
+    return return_val
+
+
+
+def deliver_resource(session_key, name, resource_type, quantity):
+
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity':quantity, 'b_deposit': True}
+
+
+    try:
+        response = requests.post(url + 'give_or_take_resource', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        return_val = b_success
+    else:
+        return_val = None
+
+    return return_val
+
+
+
+def receive_resource(session_key, name, resource_type, quantity):
+
+    data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity':quantity, 'b_deposit': False}
+
+
+    try:
+        response = requests.post(url + 'give_or_take_resource', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        return_val = b_success
+    else:
+        return_val = None
+
+    return return_val
+
+
+
+
 def main():
 
     session_key = 'bagel'
@@ -190,21 +301,29 @@ def main():
 
     resourceA = 'apple'
 
-    create_session(session_key)
+    # session_key = create_session(session_key)
 
-    person_id = create_person(session_key=session_key, name=nameA, money=200.00, resource_dict={resourceA: 120})
-    person_id = create_person(session_key=session_key, name=nameB, money=1500.00)
+    # resource_id = create_resource(session_key, resourceA)
 
-
-    order_id = sell_limit_order(session_key=session_key, name=nameA, resource_type=resourceA, quantity=8, price=2.50)
-    b_success = buy_market_order(session_key=session_key, name=nameB, resource_type=resourceA, quantity=3)
-
-    ask_price = get_ask_price(session_key=session_key, resource_type=resourceA, quantity=3)
-
-    bid_price = get_bid_price(session_key=session_key, resource_type=resourceA, quantity=1)
+    # person_id = create_person(session_key=session_key, name=nameA, money=200.00, resource_dict={resourceA: 120})
+    # person_id = create_person(session_key=session_key, name=nameB, money=1500.00)
 
 
+    # order_id = sell_limit_order(session_key=session_key, name=nameA, resource_type=resourceA, quantity=8, price=2.50)
+    # b_success = buy_market_order(session_key=session_key, name=nameB, resource_type=resourceA, quantity=3)
 
+    # ask_price = get_ask_price(session_key=session_key, resource_type=resourceA, quantity=3)
+
+    # bid_price = get_bid_price(session_key=session_key, resource_type=resourceA, quantity=1)
+
+
+    # b_success = deposit(session_key=session_key, name=nameA, money=10.20)
+
+    # b_success = withdraw(session_key=session_key, name=nameB, money=5.30)
+
+    b_success = deliver_resource(session_key=session_key, name=nameB, resource_type=resourceA, quantity=1)
+
+    b_success = receive_resource(session_key=session_key, name=nameA, resource_type=resourceA, quantity=3)
 
 
 if __name__ == '__main__':
