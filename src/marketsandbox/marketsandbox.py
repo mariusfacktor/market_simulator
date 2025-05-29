@@ -291,6 +291,69 @@ def receive_resource(session_key, name, resource_type, quantity):
 
 
 
+def get_assets(session_key, name):
+
+    params = {'session_key': session_key, 'name': name}
+
+    try:
+        response = requests.get(url + 'get_assets', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        cash = response.json()['data']['cash']
+        resource_list = response.json()['data']['resource_list']
+
+        resource_dict = {x['type'] : x['quantity'] for x in resource_list}
+    else:
+        cash = None
+        resource_dict = None
+
+    return cash, resource_dict
+
+
+
+def get_people(session_key):
+
+    params = {'session_key': session_key}
+
+    try:
+        response = requests.get(url + 'get_people', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        person_list = response.json()['data']['people']
+    else:
+        person_list = None
+
+    return person_list
+
+
+
+def get_resources(session_key):
+
+    params = {'session_key': session_key}
+
+    try:
+        response = requests.get(url + 'get_resources', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        resource_list = response.json()['data']['resources']
+    else:
+        resource_list = None
+
+    return resource_list
+
+
 
 def main():
 
@@ -321,9 +384,15 @@ def main():
 
     # b_success = withdraw(session_key=session_key, name=nameB, money=5.30)
 
-    b_success = deliver_resource(session_key=session_key, name=nameB, resource_type=resourceA, quantity=1)
+    # b_success = deliver_resource(session_key=session_key, name=nameB, resource_type=resourceA, quantity=1)
 
-    b_success = receive_resource(session_key=session_key, name=nameA, resource_type=resourceA, quantity=3)
+    # b_success = receive_resource(session_key=session_key, name=nameA, resource_type=resourceA, quantity=3)
+
+    # cash, resource_dict = get_assets(session_key=session_key, name=nameA)
+
+    people_list = get_people(session_key=session_key)
+
+    resource_list = get_resources(session_key=session_key)
 
 
 if __name__ == '__main__':
