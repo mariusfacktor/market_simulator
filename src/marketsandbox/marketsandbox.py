@@ -440,7 +440,29 @@ def get_buy_limit_orders(session_key, resource_type):
 
 
 
+def get_supply_and_demand_chart_data(session_key, resource_type):
 
+    params = {'session_key': session_key, 'resource_type': resource_type}
+
+    try:
+        response = requests.get(url + 'get_supply_and_demand', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        supply_price_list = response.json()['data']['supply_price_list']
+        supply_quantity_list = response.json()['data']['supply_quantity_list']
+        demand_price_list = response.json()['data']['demand_price_list']
+        demand_quantity_list = response.json()['data']['demand_quantity_list']
+    else:
+        supply_price_list = None
+        supply_quantity_list = None
+        demand_price_list = None
+        demand_quantity_list = None
+
+    return supply_price_list, supply_quantity_list, demand_price_list, demand_quantity_list
 
 
 
@@ -499,6 +521,8 @@ def main():
 
     buy_orders = get_buy_limit_orders(session_key=session_key, resource_type=resourceA)
 
+    supply_price_list, supply_quantity_list, \
+    demand_price_list, demand_quantity_list = get_supply_and_demand_chart_data(session_key=session_key, resource_type=resourceA)
 
 
 

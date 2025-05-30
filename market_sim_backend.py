@@ -1165,6 +1165,62 @@ def give_or_take_resource(session_key, name, resource_type, b_deposit, quantity,
     return b_success, message
 
 
+
+def calculate_supply_and_demand(session_key, resource_type):
+
+    session_id = session.query(Session).filter(Session.session_key == session_key).one().id
+
+    b_success_get, message_get, resource_type, resource_id = get_resource_type_and_resource_id(session_id,
+                                                                                               resource_type=resource_type,
+                                                                                               resource_id=None)
+
+    if not b_success_get:
+        b_success = False
+        message = 'Failure (supply demand): %s' % message_get
+        return b_success, message, None, None, None, None
+
+
+
+    sell_orders = get_sell_orders(session_id, resource_id)
+    buy_orders = get_buy_orders(session_id, resource_id)
+
+
+
+    # Supply
+    supply_price_list = []
+    supply_quantity_list = []
+
+    running_quantity = 0
+
+    for sell_order in sell_orders:
+        price = sell_order['price']
+        running_quantity += sell_order['quantity_available']
+
+        supply_price_list.append(price)
+        supply_quantity_list.append(running_quantity)
+
+
+    # Demand
+    demand_price_list = []
+    demand_quantity_list = []
+
+    running_quantity = 0
+
+    for buy_order in buy_orders:
+        price = buy_order['price']
+        running_quantity += buy_order['quantity_available']
+
+        demand_price_list.append(price)
+        demand_quantity_list.append(running_quantity)
+
+
+    b_success = True
+    message = 'Success (supply demand): buy and sell data gathered for resource %s' %(resource_type)
+
+    return b_success, message, supply_price_list, supply_quantity_list, demand_price_list, demand_quantity_list
+
+
+
 def new_resource(session_key, resource_type):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
@@ -1503,6 +1559,32 @@ def api_get_resources():
         
         return_data = {
                         'resources': resource_list
+                        }
+
+
+        response = {'message': message, 'data': return_data, 'b_success': b_success}
+        return jsonify(response), 201  # Return a JSON response with status code 201
+    else:
+        return 'Method not allowed', 405
+
+
+
+@app.route('/get_supply_and_demand', methods=['GET'])
+def api_get_supply_and_demand():
+    if request.method == 'GET':
+
+        session_key = request.args.get('session_key')
+        resource_type = request.args.get('resource_type')
+
+        b_success, message, \
+        supply_price_list, supply_quantity_list, \
+        demand_price_list, demand_quantity_list = calculate_supply_and_demand(session_key, resource_type)
+
+        return_data = {
+                        'supply_price_list': supply_price_list,
+                        'supply_quantity_list': supply_quantity_list,
+                        'demand_price_list': demand_price_list,
+                        'demand_quantity_list': demand_quantity_list
                         }
 
 
