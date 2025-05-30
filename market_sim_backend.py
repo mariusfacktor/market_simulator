@@ -999,6 +999,12 @@ def cancel_sell_order(session_key, sell_id):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
 
+    if not session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).all():
+        b_success = False
+        message = 'Failure (cancel sell order): sale_id %d does not exist' % sell_id
+
+        return b_success, message
+
     person_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().person_id
     resource_id = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().resource_id
     quantity = session.query(SellOrder).filter(SellOrder.session_id == session_id, SellOrder.id == sell_id).one().quantity
@@ -1014,7 +1020,7 @@ def cancel_sell_order(session_key, sell_id):
     calculate_quantity_available_for_sell_order(session_id, person_id, resource_id)
 
     b_success = True
-    message = 'SUCCESS (cancel sell order): sale %d canceled' % sell_id
+    message = 'Success (cancel sell order): sale %d canceled' % sell_id
 
     return b_success, message
 
@@ -1023,6 +1029,12 @@ def cancel_sell_order(session_key, sell_id):
 def cancel_buy_order(session_key, buy_id):
 
     session_id = session.query(Session).filter(Session.session_key == session_key).one().id
+
+    if not session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).all():
+        b_success = False
+        message = 'Failure (cancel buy order): buy_id %d does not exist' % buy_id
+
+        return b_success, message
 
     person_id = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).one().person_id
     resource_id = session.query(BuyOrder).filter(BuyOrder.session_id == session_id, BuyOrder.id == buy_id).one().resource_id
@@ -1039,7 +1051,7 @@ def cancel_buy_order(session_key, buy_id):
     calculate_quantity_available_for_buy_order(session_id, person_id, resource_id)
 
     b_success = True
-    message = 'SUCCESS (cancel buy order): buy order %d canceled' % buy_id
+    message = 'Success (cancel buy order): buy order %d canceled' % buy_id
 
     return b_success, message
 

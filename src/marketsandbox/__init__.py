@@ -24,6 +24,13 @@ from .marketsandbox import get_assets
 from .marketsandbox import get_people
 from .marketsandbox import get_resources
 
+from .marketsandbox import cancel_sell_limit_order
+from .marketsandbox import cancel_buy_limit_order
+
+from .marketsandbox import get_sell_limit_orders
+from .marketsandbox import get_buy_limit_orders
+
+
 
 
 
@@ -35,4 +42,6 @@ __all__ = ['create_session', 'create_person', 'create_resource',
 		   'buy_limit_order', 'buy_market_order',
 		   'get_ask_price', 'get_bid_price',
 		   'get_assets', 'get_people', 'get_resources',
+		   'cancel_sell_limit_order', 'cancel_buy_limit_order',
+		   'get_sell_limit_orders', 'get_buy_limit_orders'
 		   ]

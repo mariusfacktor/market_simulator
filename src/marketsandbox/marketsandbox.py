@@ -355,6 +355,97 @@ def get_resources(session_key):
 
 
 
+def cancel_sell_limit_order(session_key, order_id):
+
+    data = {'session_key': session_key, 'sell_id': order_id}
+
+
+    try:
+        response = requests.post(url + 'cancel_sell_order', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        return_val = b_success
+    else:
+        return_val = None
+
+    return return_val
+
+
+
+
+def cancel_buy_limit_order(session_key, order_id):
+
+    data = {'session_key': session_key, 'buy_id': order_id}
+
+
+    try:
+        response = requests.post(url + 'cancel_buy_order', json=data)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        return_val = b_success
+    else:
+        return_val = None
+
+    return return_val
+
+
+
+def get_sell_limit_orders(session_key, resource_type):
+
+    params = {'session_key': session_key, 'resource_type': resource_type, 'b_buy_orders': False, 'b_quatity_available': False}
+
+    try:
+        response = requests.get(url + 'get_orders', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        orders = response.json()['data']['orders_list']
+    else:
+        orders = None
+
+    return orders
+
+
+
+def get_buy_limit_orders(session_key, resource_type):
+
+    params = {'session_key': session_key, 'resource_type': resource_type, 'b_buy_orders': True, 'b_quatity_available': False}
+
+    try:
+        response = requests.get(url + 'get_orders', params=params)
+    except:
+        raise RuntimeError('Cannot connect to server at address %s' %url)
+
+    b_success = response.json()['b_success']
+
+    if b_success:
+        orders = response.json()['data']['orders_list']
+    else:
+        orders = None
+
+    return orders
+
+
+
+
+
+
+
+
+
 def main():
 
     session_key = 'bagel'
@@ -372,7 +463,10 @@ def main():
     # person_id = create_person(session_key=session_key, name=nameB, money=1500.00)
 
 
-    # order_id = sell_limit_order(session_key=session_key, name=nameA, resource_type=resourceA, quantity=8, price=2.50)
+    # sell_id = sell_limit_order(session_key=session_key, name=nameA, resource_type=resourceA, quantity=8, price=2.50)
+
+    # buy_id = buy_limit_order(session_key=session_key, name=nameB, resource_type=resourceA, quantity=4, price=1.14)
+
     # b_success = buy_market_order(session_key=session_key, name=nameB, resource_type=resourceA, quantity=3)
 
     # ask_price = get_ask_price(session_key=session_key, resource_type=resourceA, quantity=3)
@@ -393,6 +487,19 @@ def main():
     people_list = get_people(session_key=session_key)
 
     resource_list = get_resources(session_key=session_key)
+
+
+
+    # b_success = cancel_sell_limit_order(session_key=session_key, order_id=sell_id)
+
+    # b_success = cancel_buy_limit_order(session_key=session_key, order_id=buy_id)
+
+
+    sell_orders = get_sell_limit_orders(session_key=session_key, resource_type=resourceA)
+
+    buy_orders = get_buy_limit_orders(session_key=session_key, resource_type=resourceA)
+
+
 
 
 if __name__ == '__main__':
