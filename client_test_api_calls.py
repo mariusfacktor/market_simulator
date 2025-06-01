@@ -1,6 +1,9 @@
 
 import requests
-import random
+import sqlite3
+
+
+# Instructions: Delete database.db before running tests
 
 # port = 5000
 port = 8000
@@ -11,17 +14,14 @@ addr = 'http://127.0.0.1'
 url = addr + ':' + str(port) + '/'
 
 
-# random.seed(8)
+nameA = 'Jean Rose'
+nameB = 'Hank Tomford'
 
-names = ['Martin Tubins', 'Ryan Loaf', 'Andrew Harrington', 'Alicia Kind', 'Zara Barns', 'Trisha Hansen', 'Drake Reiner', 'Peter Thames', 'Thomas Bing',
-        'George Christianson', 'Mary Eiger', 'Ronda Meere', 'Barney Opinheimer', 'Rick Zork', 'Walter Moon', 'Simon Baxter', 'Susan Nelson', 'Ed Yon',
-        'Charlie Young', 'Mandy Poppins', 'Jon Phelps', 'Harry Platter', 'Sven Beans', 'Donna Waters', 'Neal Borgswith', 'Torance Miller', 'Rod Fried',
-        'Ralph Gibbons', 'Scooter Coolidge', 'Jim Roberts', 'Ripley James', 'Ashley Summers', 'Andy Florence', 'Vanessa Craw', 'Ted Moe', 'Tia Alfred']
+resources = ['apple', 'orange']
 
-# resources = ['apple', 'orange', 'tomato']
-resources = ['apple', 'orange', 'tomato', 'coconut', 'banana', 'mango']
+session_key = 'example'
 
-session_key = 'example' # 'debug'
+cursor = None
 
 
 def create_session():
@@ -31,15 +31,7 @@ def create_session():
     print(response.json())
 
 
-def create_person(name=None):
-    if not name:
-        name = names[random.randint(0, len(names) - 1)]
-    cash = random.randint(100, 1000)
-    resource_dict = {}
-
-    for resource in resources:
-        if random.randint(0, 1):
-            resource_dict[resource] = random.randint(0, 60)
+def create_person(name, cash, resource_dict={}):
 
     data = {'session_key': session_key, 'name': name, 'cash': cash, 'resource_dict': resource_dict}
 
@@ -49,13 +41,7 @@ def create_person(name=None):
     return name
 
 
-def sell_order(name):
-
-    resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 20)
-
-    price = round(0.29 + (8.99 * random.random()), 2)
-
+def sell_order(name, resource_type, quantity, price):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
 
@@ -63,13 +49,7 @@ def sell_order(name):
     print(response.json())
 
 
-def buy_order(name):
-
-    resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 15)
-
-    price = round(0.29 + (8.99 * random.random()), 2)
-
+def buy_order(name, resource_type, quantity, price):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity, 'price': price}
 
@@ -77,10 +57,23 @@ def buy_order(name):
     print(response.json())
 
 
-def buy(name):
+def cancel_sell_order(sell_id):
 
-    resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 15)
+    data = {'session_key': session_key, 'sell_id': sell_id}
+
+    response = requests.post(url + 'cancel_sell_order', json=data)
+    print(response.json())
+
+
+def cancel_buy_order(buy_id):
+
+    data = {'session_key': session_key, 'buy_id': buy_id}
+
+    response = requests.post(url + 'cancel_buy_order', json=data)
+    print(response.json())
+
+
+def buy_now(name, resource_type, quantity):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
@@ -88,10 +81,7 @@ def buy(name):
     print(response.json())
 
 
-def sell(name):
-
-    resource_type = resources[random.randint(0, len(resources) - 1)]
-    quantity = random.randint(1, 15)
+def sell_now(name, resource_type, quantity):
 
     data = {'session_key': session_key, 'name': name, 'resource_type': resource_type, 'quantity': quantity}
 
@@ -99,37 +89,190 @@ def sell(name):
     print(response.json())
 
 
+def deposit_or_withdraw(name, dollars, b_deposit=True):
 
-def examples(num_iter=1):
+    data = {'session_key': session_key, 'name': name, 'b_deposit': b_deposit, 'dollars': dollars}
 
-    for i in range(num_iter):
-
-        print('')
-
-        name = names[random.randint(0, len(names) - 1)]
-
-        sell_order(name)
-        buy_order(name)
-
-        sell(name)
-        buy(name)
+    response = requests.post(url + 'deposit_or_withdraw', json=data)
+    print(response.json())
 
 
-def create_all_people():
-    for name in names:
-        create_person(name)
+
+def connect_to_db():
+
+    global cursor
+
+    # Connect to the database (or create it if it doesn't exist)
+    conn = sqlite3.connect('database.db', check_same_thread=False)
+
+    conn.row_factory = sqlite3.Row
+    # Create a cursor object to execute SQL commands
+    cursor = conn.cursor()
+
+
+
+def test_A():
+
+    create_session()
+    create_person(nameA, 100, resource_dict={'apple': 10})
+    create_person(nameB, 100, resource_dict={'orange': 10})
+    sell_order(nameA, 'apple', 10, 5)
+    sell_order(nameA, 'apple', 6, 3)
+
+    buy_now(nameB, 'apple', 2)
+
+
+def test_B():
+
+    buy_order(nameA, 'orange', 5, 1.49)
+    deposit_or_withdraw(nameA, 20)
+
+
+def test_C():
+
+    cancel_buy_order(1)
+
+
+def test_D():
+
+    create_session()
+    create_person(nameA, 100, resource_dict={'apple': 50})
+    create_person(nameB, 100, resource_dict={'orange': 30})
+    sell_order(nameA, 'apple', 10, 5.00)
+    sell_order(nameA, 'apple', 6, 3.30)
+    sell_order(nameA, 'apple', 4, 2.50)
+
+    buy_order(nameB, 'apple', 8, 4.4)
+
+
+def test_E():
+
+    # create_session()
+    # create_person(nameA, 100, resource_dict={'apple': 50})
+    # create_person(nameB, 100, resource_dict={'orange': 30})
+    # buy_order(nameA, 'orange', 10, 5.00)
+    # buy_order(nameA, 'orange', 6, 3.30)
+    # buy_order(nameA, 'orange', 4, 2.50)
+
+    sell_now(nameB, 'orange', 12)
+
+
+
+
+def check_A1():
+
+    query = cursor.execute('''SELECT cash FROM person WHERE session_id = 1 AND name = "%s" ''' % nameA)
+    cash = query.fetchall()[0][0]
+    assert cash == 106, '%s must have $112' % nameA
+
+
+    query = cursor.execute('''SELECT cash FROM person WHERE session_id = 1 AND name = "%s" ''' % nameB)
+    cash = query.fetchall()[0][0]
+    assert cash == 94, '%s must have $94' % nameB
+
+
+
+
+def check_A2():
+
+    query = cursor.execute('''SELECT quantity FROM person_resource 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 8, '%s must have 8 apples' % nameA
+
+
+    query = cursor.execute('''SELECT quantity FROM person_resource 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 2, '%s must have 2 apples' % nameB
+
+
+    query = cursor.execute('''SELECT quantity FROM person_resource 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 2 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 10, '%s must have 10 oranges' % nameB
+
+
+
+
+def check_A3():
+
+    query = cursor.execute('''SELECT quantity FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 10, '%s must be selling 10 apples' % nameA
+
+
+    query = cursor.execute('''SELECT quantity_available FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 1 ''')
+    quantity_available = query.fetchall()[0][0]
+    assert quantity_available == 4, '%s must have 4 apples available in this sell_order' % nameA
+
+
+    query = cursor.execute('''SELECT quantity FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 2''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 4, '%s must be selling 4 apples' % nameA
+
+
+    query = cursor.execute('''SELECT quantity_available FROM sell_order 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1 AND id = 2 ''')
+    quantity_available = query.fetchall()[0][0]
+    assert quantity_available == 4, '%s must have 4 apples available in this sell_order' % nameA
+
+
+
+def check_A4():
+
+    query = cursor.execute('''SELECT quantity FROM sell_history 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 2, '%s must have sold 2 apples' % nameA
+
+
+    query = cursor.execute('''SELECT total_price FROM sell_history 
+                              WHERE session_id = 1 AND person_id = 1 AND resource_id = 1''')
+    total_price = query.fetchall()[0][0]
+    assert total_price == 6, '%s must have been paid $6' % nameA
+
+
+
+def check_A5():
+
+    query = cursor.execute('''SELECT quantity FROM buy_history 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 1 ''')
+    quantity = query.fetchall()[0][0]
+    assert quantity == 2, '%s must have bought 2 apples' % nameB
+
+
+    query = cursor.execute('''SELECT total_price FROM buy_history 
+                              WHERE session_id = 1 AND person_id = 2 AND resource_id = 1 ''')
+    total_price = query.fetchall()[0][0]
+    assert total_price == 6, '%s must have paid $6' % nameB
+
 
 
 
 def main():
 
-    create_session()
 
-    create_all_people()
+    connect_to_db()
 
-    num_iter = 100
+    test_A()
+    check_A1()
+    check_A2()
+    check_A3()
+    check_A4()
+    check_A5()
 
-    examples(num_iter)
+    # test_B()
+
+    # test_C()
+
+    # test_D()
+
+    # test_E()
+
 
 
 

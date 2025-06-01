@@ -7,7 +7,7 @@ from .marketsandbox import create_session
 from .marketsandbox import create_person
 from .marketsandbox import create_resource
 
-from .marketsandbox import desposit
+from .marketsandbox import deposit
 from .marketsandbox import withdraw
 
 from .marketsandbox import deliver_resource
