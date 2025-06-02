@@ -1,13 +1,34 @@
 
 # relative import
 import sys
-from src.marketsandbox import marketsandbox as ms
+from pypi_package.src.marketsandbox import marketsandbox as ms
 
-# import marketsandbox
+# import marketsandbox as ms
 
 
-def main():
+def example():
+    # make a session key which can be any string you choose
+    SK = 'hamster'
+    ms.create_session(session_key=SK)
 
+    # create a resource called carrot and a person called Ham Solo who starts with $200
+    ms.create_resource(session_key=SK, resource_type='carrot')
+    ms.create_person(session_key=SK, name='Ham Solo', money=200.00)
+
+    # give Ham Solo 30 carrots to start
+    ms.deliver_resource(session_key=SK, name='Ham Solo', resource_type='carrot', quantity=30)
+
+    # Ham Solo wants to sell 10 carrots for $1.25 each
+    ms.sell_limit_order(session_key=SK, name='Ham Solo', resource_type='carrot', quantity=10, price=1.25)
+
+    # Get the lowest price for sale on the market
+    ask_price = ms.get_ask_price(session_key=SK, resource_type='carrot')
+
+    print(ask_price) # -> 1.25
+
+
+
+def test_all():
     session_key = 'bagel'
 
     nameA = 'Blake Johnson'
@@ -15,9 +36,9 @@ def main():
 
     resourceA = 'apple'
 
-    # session_key = ms.create_session(session_key)
+    # session_key = ms.create_session(session_key=session_key)
 
-    # resource_id = ms.create_resource(session_key, resourceA)
+    # resource_id = ms.create_resource(session_key=session_key, resource_type=resourceA)
 
     # person_id = ms.create_person(session_key=session_key, name=nameA, money=200.00, resource_dict={resourceA: 120})
     # person_id = ms.create_person(session_key=session_key, name=nameB, money=1500.00)
@@ -64,6 +85,13 @@ def main():
 
 
     print(people_list)
+
+
+
+def main():
+
+    test_all()
+    # example()
     
 
 if __name__ == '__main__':

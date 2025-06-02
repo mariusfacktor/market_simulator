@@ -1,12 +1,11 @@
 
 import requests
-import random
 
 port = 8000
 
 url = 'http://127.0.0.1' + ':' + str(port) + '/'
-# addr = 'http://34.82.55.106' + ':' + str(port) + '/'
-# addr = 'https://market-sim.serverpit.com' + '/'
+# url = 'http://34.82.55.106' + ':' + str(port) + '/'
+# url = 'https://market-sim.serverpit.com' + '/'
 
 
 
