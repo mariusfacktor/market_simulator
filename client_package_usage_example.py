@@ -90,8 +90,8 @@ def test_all():
 
 def main():
 
-    test_all()
-    # example()
+    # test_all()
+    example()
     
 
 if __name__ == '__main__':

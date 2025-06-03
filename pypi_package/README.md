@@ -27,6 +27,12 @@ ask_price = ms.get_ask_price(session_key=SK, resource_type='carrot')
 print(ask_price) # -> 1.25
 ```
 
+## Installation
+
+```
+pip install marketsandbox
+```
+
 
 ## API
 
