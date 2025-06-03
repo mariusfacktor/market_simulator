@@ -1,9 +1,9 @@
 
 # relative import
-import sys
-from pypi_package.src.marketsandbox import marketsandbox as ms
+# import sys
+# from pypi_package.src.marketsandbox import marketsandbox as ms
 
-# import marketsandbox as ms
+import marketsandbox as ms
 
 
 def example():
